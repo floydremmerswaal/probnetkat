@@ -1,24 +1,8 @@
 module Main (main) where
   
-import Control.Monad (liftM2, replicateM, forM, forM_)
-import Control.Monad.IO.Class (liftIO)
-import Data.List (sort)
+import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class
-import Control.Monad.Bayes.Traced
-import Control.Monad.Bayes.Weighted
-import Control.Monad.Bayes.Inference.SMC as SMC
-import Control.Monad.Bayes.Inference.RMSMC as RMSMC
-import Control.Monad.Bayes.Traced.Static (Traced)
-import Control.Monad.Bayes.Inference.SMC
 import Control.Monad.Bayes.Sampler.Strict
-import Control.Monad (when)
-import Control.Monad.Extra
-import Control.Monad.Bayes.Class
-
-import Numeric.Log
-import Control.Monad.Bayes.Class
-
-import Data.List (partition)
 
 -- Type definitions
 data Field = Field { name :: String, value :: Int } deriving (Show)
@@ -73,7 +57,7 @@ main = do
   let nsamples = 1000
 
   -- sampleIO vs sampleIOfixed (fixed seed or not)
-  samples <- sampleIOfixed $ replicateM nsamples (mProb 0.5 f1 f2)
+  samples <- sampleIO $ replicateM nsamples (mProb 0.5 f1 f2)
 
   -- count the number of 1's in samples
   print $ foldl (\acc x -> if name x == "a" && value x == 1 then acc + 1 else acc) 0 samples
