@@ -58,7 +58,7 @@ test = do
     let history'''' = pAssH history''' (Field "c" 12)
     printHead history''''
 
--- model2 takes an extra argument specifying the probability that a1 is returned
+-- distribution that has probability p for a1, and 1-p for a2
 mProb :: MonadDistribution m => Double -> Field -> Field -> m Field
 mProb p a1 a2 = do
   bernoulli p >>= \b -> return $ if b then a1 else a2
@@ -69,10 +69,11 @@ main :: IO ()
 main = do
   let f1 = Field "a" 1
   let f2 = Field "a" 2
-  test
 
   let nsamples = 1000
-  samples <- sampleIOfixed $ replicateM nsamples (mProb 0.1 f1 f2)
+
+  -- sampleIO vs sampleIOfixed (fixed seed or not)
+  samples <- sampleIOfixed $ replicateM nsamples (mProb 0.5 f1 f2)
 
   -- count the number of 1's in samples
   print $ foldl (\acc x -> if name x == "a" && value x == 1 then acc + 1 else acc) 0 samples
