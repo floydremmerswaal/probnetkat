@@ -25,6 +25,13 @@ packages:
       size: 647
   original:
     hackage: log-domain-0.13.2
+- completed:
+    hackage: monad-extras-0.6.0@sha256:a97a5fcedaa9336b88be4f88f1e91d86082ce76b790f936701c1f933aedd7b8c,625
+    pantry-tree:
+      sha256: 6b752224ea4bd60e6f34fd9dfa17712ff15986054f320c7bc298c35d5bec75d9
+      size: 218
+  original:
+    hackage: monad-extras-0.6.0
 snapshots:
 - completed:
     sha256: 14ca51a9a597c32dd7804c10d079feea3d0ae40c5fbbb346cbd67b3ae49f6d01

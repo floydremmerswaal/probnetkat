@@ -23,6 +23,7 @@ dependencies:
   - base >= 4.7 && < 5
   - monad-bayes >= 1.1.0
   - log-domain >= 0.13.2
+  - monad-extras >= 0.6.0
 
 ghc-options:
   - -Wall
