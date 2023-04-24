@@ -5,9 +5,11 @@ import Control.Monad.Bayes.Class
 import Control.Monad.Bayes.Sampler.Strict
 
 -- Type definitions
-data Field = Field { name :: String, value :: Int } deriving (Show)
+data Field = Field { name :: String, value :: Int } deriving (Show, Eq)
 type Packet = [Field]
 type History = [Packet]
+
+-- not really useful probably but just for testing
 
 -- assign value to the head package of a history
 pAssH :: History -> Field -> History
@@ -42,11 +44,17 @@ test = do
     let history'''' = pAssH history''' (Field "c" 12)
     printHead history''''
 
+
+-- some actual probabilistic stuff
+
 -- distribution that has probability p for a1, and 1-p for a2
-mProb :: MonadDistribution m => Double -> Field -> Field -> m Field
+mProb :: MonadDistribution m => Double -> Packet -> Packet -> m Packet
 mProb p a1 a2 = do
   bernoulli p >>= \b -> return $ if b then a1 else a2
 
+
+count :: Eq a => a -> [a] -> Int
+count x = length . filter (== x)
 
 
 main :: IO ()
@@ -54,13 +62,19 @@ main = do
   let f1 = Field "a" 1
   let f2 = Field "a" 2
 
+  let p1 = [f1]
+  let p2 = [f2]
+
   let nsamples = 1000
 
   -- sampleIO vs sampleIOfixed (fixed seed or not)
-  samples <- sampleIO $ replicateM nsamples (mProb 0.5 f1 f2)
+  samples <- sampleIO $ replicateM nsamples (mProb 0.5 p1 p2)
+
+  print $ count p1 samples
+  print $ count p2 samples
 
   -- count the number of 1's in samples
-  print $ foldl (\acc x -> if name x == "a" && value x == 1 then acc + 1 else acc) 0 samples
+  -- print $ foldl (\acc x -> if x == p1 then acc + 1 else acc) 0 samples
 
-  -- count the number of 2's in samples
-  print $ foldl (\acc x -> if name x == "a" && value x == 2 then acc + 1 else acc) 0 samples
+  -- -- count the number of 2's in samples
+  -- print $ foldl (\acc x -> if x == p2 then acc + 1 else acc) 0 samples
