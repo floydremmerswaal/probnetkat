@@ -66,9 +66,13 @@ mHistory :: MonadDistribution m => History -> m History
 mHistory = return
 
 
--- mDrop maps any distribution to a distribution only containing the empty history
-mDrop :: MonadDistribution m => m a -> m History
-mDrop d = do
+-- mDrop returns the distribution over the empty history
+mDrop :: MonadDistribution m => m History
+mDrop = return []
+
+-- mDropP maps any distribution to a distribution only containing the empty history
+mDropP :: MonadDistribution m => m a -> m History
+mDropP d = do
   _ <- d
   return []
 
@@ -141,7 +145,7 @@ testBench2 = do
   -- duplicate the head of history1
   let d1' = mDupp d1
 
-  let d1'' = mixDist 0.5 d1' (mDrop d1')
+  let d1'' = mixDist 0.5 d1' mDrop
 
   -- sample from d1'
   samples <- sampleIOfixed $ replicateM nsamples d1''
@@ -149,7 +153,6 @@ testBench2 = do
   -- print samples in d1'
   print "Samples in d1"
   print samples
-  printHistoryList samples
 
   print "Test bench 2 done"
 
