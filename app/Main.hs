@@ -49,22 +49,14 @@ testRegularFunctions = do
 
 -- some actual probabilistic stuff
 
--- distribution that has probability p for a1, and 1-p for a2
-mProb :: MonadDistribution m => Double -> Packet -> Packet -> m Packet
-mProb p a1 a2 = do
-  bernoulli p >>= \b -> return $ if b then a1 else a2
-
--- mProb but over histories instead of packets
+-- distribution that has probability p for h1, and 1-p for h2
 mProbH :: MonadDistribution m => Double -> History -> History -> m History
 mProbH p h1 h2 = do
   bernoulli p >>= \b -> return $ if b then h1 else h2
 
-
-
 -- lift a history to a distribution over that history
 mHistory :: MonadDistribution m => History -> m History
 mHistory = return
-
 
 -- mDrop returns the distribution over the empty history
 mDrop :: MonadDistribution m => m History
@@ -216,7 +208,7 @@ p & q
 and
 p ; q
 
-are more explicitly programs and not just distributions
+are more explicitly programs and not 'just distributions'
 how do I deal with that? :l
  
   -}
