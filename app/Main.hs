@@ -154,8 +154,29 @@ testBench2 = do
   print "Test bench 2 done"
 
 
-main :: IO ()
-main = do
+testTest :: IO ()
+testTest = do
+  let packet1 = [Field "pt" 1, Field "sw" 2]
+  let packet2 = [Field "pt" 2, Field "sw" 2]
+  let d1 = mHistory [packet1]
+  let d2 = mHistory [packet2]
+
+  let dist = mixDist 0.5 d1 d2
+
+  let nsamples = 10
+  
+  samples <- sampleIOfixed $ replicateM nsamples dist
+
+  let dist' = mTest dist "pt" 1
+
+  samples' <- sampleIOfixed $ replicateM nsamples dist'
+
+  print samples
+  print samples'
+
+
+oldTest :: IO ()
+oldTest = do
   let f1 = Field "a" 1
   let f2 = Field "a" 2
 
@@ -168,10 +189,6 @@ main = do
   let nsamples = 1000
 
   -- sampleIO vs sampleIOfixed (fixed seed or not)
-  samples <- sampleIO $ replicateM nsamples (mProb 0.5 p1 p2)
-
-  print $ count p1 samples
-  print $ count p2 samples
 
   samples' <- sampleIO $ replicateM nsamples (mHistory h1)
 
@@ -191,6 +208,9 @@ main = do
   -- print $ foldl (\acc x -> if x == p2 then acc + 1 else acc) 0 samples
 
 
+main :: IO ()
+main = do
+  testTest
 
 
   {-
