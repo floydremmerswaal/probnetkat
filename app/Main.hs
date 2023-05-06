@@ -85,6 +85,13 @@ mITE b d1 d2 = do
   x <- b
   if x then d1 else d2
 
+-- test in probnetkat, takes in a history distribution, a field name and a value
+mTest :: MonadDistribution m => m History -> String -> Int -> m History
+mTest d name value = do
+  -- if the field 'name' of history 'd' has value 'value', return d, else return the empty history
+  d >>= \h -> if count (Field name value) (head h) > 0 then return h else mDrop
+
+
 --------------
 count :: Eq a => a -> [a] -> Int
 count x = length . filter (== x)
@@ -129,8 +136,6 @@ testBench = do
 testBench2 :: IO ()
 testBench2 = do
   -- we will create a package (history) and then transform it, and finally sampling it to see the possibilities
-
-  -- we will duplicate it, 
 
   print "Test bench 2 starting"
   let packet1 = [Field "pt" 1, Field "sw" 2]
@@ -192,3 +197,26 @@ main = do
 
   -- -- count the number of 2's in samples
   -- print $ foldl (\acc x -> if x == p2 then acc + 1 else acc) 0 samples
+
+
+
+
+  {-
+  Atomic operations:
+  assignment  done.
+  test        done?
+  dup         done.
+  skip        done I think
+  drop        done
+  p & q       
+  p ; q
+  p (+)_r q   done
+
+p & q
+and
+p ; q
+
+are more explicitly programs and not just distributions
+how do I deal with that? :l
+ 
+  -}
