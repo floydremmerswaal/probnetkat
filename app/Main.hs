@@ -7,9 +7,13 @@ import Control.Monad.Bayes.Enumerator
 import Data.Bits (Bits(xor))
 
 -- Type definitions
-data Field = Field { name :: String, value :: Int } deriving (Show, Eq)
+data Field = Field { name :: String, value :: Int } deriving (Eq)
 type Packet = [Field]
 type History = [Packet]
+
+-- define show for Field, not really good haskell but makes it a bit more readable at the moment
+instance Show Field where
+  show (Field name value) = "{" ++ show name ++ ":" ++ show value ++ "}"
 
 -- not really useful probably but just for testing
 
@@ -163,7 +167,7 @@ testTest = do
 
   let dist = mixDist 0.5 d1 d2
 
-  let nsamples = 10
+  let nsamples = 3
   
   samples <- sampleIOfixed $ replicateM nsamples dist
 
@@ -172,6 +176,9 @@ testTest = do
   samples' <- sampleIOfixed $ replicateM nsamples dist'
 
   print samples
+
+  print " "
+
   print samples'
 
 
