@@ -33,6 +33,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       base >=4.7 && <5
+    , containers >=0.6.5.1
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
@@ -47,6 +48,7 @@ executable probnetkat-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers >=0.6.5.1
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
@@ -63,6 +65,7 @@ test-suite probnetkat-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
+    , containers >=0.6.5.1
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0

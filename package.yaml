@@ -24,6 +24,7 @@ dependencies:
   - monad-bayes >= 1.1.0
   - log-domain >= 0.13.2
   - monad-extras >= 0.6.0
+  - containers >= 0.6.5.1
 
 ghc-options:
   - -Wall
