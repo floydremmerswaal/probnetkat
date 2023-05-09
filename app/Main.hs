@@ -295,21 +295,25 @@ drop hs = return Set.empty
 
 ----------- Probabilistic operators
 -- p & q
-
 -- p ; q
-
 -- p (+)_r q
 
--- p & q is parallel composition, so we need to take the union of the two sets of histories
-par :: MonadDistribution m => Set.Set History -> Set.Set History -> m (Set.Set History)
-par hs1 hs2 = return $ Set.union hs1 hs2
 
--- p ; q is sequential composition, so we take the distribution of the first program, and then apply the second program to each history in the distribution
-seq :: MonadDistribution m => m (Set.Set History) -> (Set.Set History -> m (Set.Set History)) -> m (Set.Set History)
-seq hs1 hs2 = do
-  hs1' <- hs1
-  hs2' <- hs2 hs1'
-  return hs2'
+-- p & q is parallel composition, so we need to take the union of the two sets of histories
+parSets :: MonadDistribution m => Set.Set History -> Set.Set History -> m (Set.Set History)
+parSets hs1 hs2 = return $ Set.union hs1 hs2
+
+-- par on programs
+-- par :: MonadDistribution m => (Set.Set History -> m (Set.Set History)) -> (Set.Set History -> m (Set.Set History)) -> (Set.Set History -> m (Set.Set History))
+-- par prgm1 prgm2 = do
+--   let o1 = prgm1
+--   let o2 = prgm2
+--   return $ parSets o1 o2
+
+-- p ; q is sequential composition
+seq :: MonadDistribution m => (Set.Set History -> m (Set.Set History)) -> (Set.Set History -> m (Set.Set History)) -> (Set.Set History -> m (Set.Set History))
+seq prgm1 prgm2 = do
+  prgm1 >>= prgm2
 
 -- p (+)_r q is probabilistic with chance r for p and 1-r for q
 prob :: MonadDistribution m => Double -> m (Set.Set History) -> m (Set.Set History) -> m (Set.Set History)
