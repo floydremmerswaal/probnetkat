@@ -78,6 +78,7 @@ parSets sh prgm1 prgm2 = do
   sample1 <- prgm1 sh
   sample2 <- prgm2 sh
   return $ Set.union sample1 sample2
+-- Dit kan elegeant met Arrow? LiftA2?
 
 
 -- par on programs
