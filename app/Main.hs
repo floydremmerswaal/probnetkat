@@ -4,6 +4,7 @@ import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class ( MonadDistribution(bernoulli) )
 import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.Bayes.Enumerator
+import Control.Arrow ((>>>))
 import Data.Bits (Bits(xor))
 
 import qualified Data.Set as Set
@@ -56,7 +57,7 @@ test :: MonadDistribution m => Field -> SH -> m (SH)
 test f = return . Set.filter (any (any (== f)) . listToMaybe)
 
 dup :: MonadDistribution m => SH -> m (SH)
-dup hs = return . Set.map dupHead
+dup hs = return (Set.map dupHead hs)
 
 skip :: MonadDistribution m => SH -> m (SH)
 skip hs = return hs
@@ -72,8 +73,12 @@ drop hs = return Set.empty
 
 
 -- p & q is parallel composition, so we need to take the union of the two sets of histories
-parSets :: MonadDistribution m => SH -> SH -> m (SH)
-parSets hs1 hs2 = return $ Set.union hs1 hs2
+parSets :: MonadDistribution m => SH -> (SH -> m SH) -> (SH -> m (SH)) -> m (SH)
+parSets sh prgm1 prgm2 = do
+  sample1 <- prgm1 sh
+  sample2 <- prgm2 sh
+  return $ Set.union sample1 sample2
+
 
 -- par on programs
 -- par :: MonadDistribution m => (SH -> m (SH)) -> (SH -> m (SH)) -> (SH -> m (SH))
@@ -83,9 +88,14 @@ parSets hs1 hs2 = return $ Set.union hs1 hs2
 --   return $ parSets o1 o2
 
 -- p ; q is sequential composition
-seq :: MonadDistribution m => (SH -> m (SH)) -> (SH -> m (SH)) -> (SH -> m (SH))
-seq prgm1 prgm2 h = do
-  prgm1 h >>= prgm2
+seq :: MonadDistribution m => (SH -> m (SH)) -> (m SH -> m (SH)) -> (SH -> m (SH))
+seq = (>>>)
+
+
+-- old seq, difference in type signature!
+-- seq :: MonadDistribution m => (SH -> m (SH)) -> (SH -> m (SH)) -> (SH -> m (SH))
+-- seq prgm1 prgm2 h = do
+--   prgm1 h >>= prgm2
 
 -- p (+)_r q is probabilistic with chance r for p and 1-r for q
 prob :: MonadDistribution m => Double -> m (SH) -> m (SH) -> m (SH)
