@@ -7,23 +7,20 @@ import Control.Monad.Bayes.Enumerator
 import Data.Bits (Bits(xor))
 
 import qualified Data.Set as Set
+import Data.Set (Set)
+
+import Data.Maybe (listToMaybe)
 
 -- Type definitions
-data Field = Field { name :: String, value :: Int }
+data Field = Field { name :: String, value :: Int } deriving (Eq, Ord)
 type Packet = [Field]
 type History = [Packet]
 
--- define show, eq and ord for Field, not really good haskell but makes it a bit more readable at the moment
+type SH = Set History
+
+-- define show not really good haskell but makes it a bit more readable at the moment
 instance Show Field where
   show (Field name value) = "{" ++ show name ++ ":" ++ show value ++ "}"
-
--- eq and ord are defined to be able to use Set.Set (uses a binary tree under the hood, relying on ord)
-
-instance Eq Field where
-  (Field name1 value1) == (Field name2 value2) = name1 == name2 && value1 == value2
-
-instance Ord Field where
-  compare (Field name1 value1) (Field name2 value2) = compare name1 name2 <> compare value1 value2
 
 main :: IO ()
 main = do
@@ -50,25 +47,21 @@ dupHead [] = []
 dupHead (x:xs) = [x,x] ++ xs
 
 ----------- Atomic operations
-assign :: MonadDistribution m => Field -> Set.Set History -> m (Set.Set History)
+assign :: MonadDistribution m => Field -> SH -> m (SH)
 assign f hs = do
   let hs' = Set.map (\h -> assignHead h f) hs
   return hs'
 
-test :: MonadDistribution m => Field -> Set.Set History -> m (Set.Set History)
-test f hs = do
-  let hs' = Set.filter (\h -> count f (head h) > 0) hs
-  return hs'
+test :: MonadDistribution m => Field -> SH -> m (SH)
+test f = return . Set.filter (any (any (== f)) . listToMaybe)
 
-dup :: MonadDistribution m => Set.Set History -> m (Set.Set History)
-dup hs = do
-  let hs' = Set.map dupHead hs
-  return hs'
+dup :: MonadDistribution m => SH -> m (SH)
+dup hs = return . Set.map dupHead
 
-skip :: MonadDistribution m => Set.Set History -> m (Set.Set History)
+skip :: MonadDistribution m => SH -> m (SH)
 skip hs = return hs
 
-drop :: MonadDistribution m => Set.Set History -> m (Set.Set History)
+drop :: MonadDistribution m => SH -> m (SH)
 drop hs = return Set.empty
 
 
@@ -79,23 +72,23 @@ drop hs = return Set.empty
 
 
 -- p & q is parallel composition, so we need to take the union of the two sets of histories
-parSets :: MonadDistribution m => Set.Set History -> Set.Set History -> m (Set.Set History)
+parSets :: MonadDistribution m => SH -> SH -> m (SH)
 parSets hs1 hs2 = return $ Set.union hs1 hs2
 
 -- par on programs
--- par :: MonadDistribution m => (Set.Set History -> m (Set.Set History)) -> (Set.Set History -> m (Set.Set History)) -> (Set.Set History -> m (Set.Set History))
+-- par :: MonadDistribution m => (SH -> m (SH)) -> (SH -> m (SH)) -> (SH -> m (SH))
 -- par prgm1 prgm2 = do
 --   let o1 = prgm1
 --   let o2 = prgm2
 --   return $ parSets o1 o2
 
 -- p ; q is sequential composition
-seq :: MonadDistribution m => (Set.Set History -> m (Set.Set History)) -> (Set.Set History -> m (Set.Set History)) -> (Set.Set History -> m (Set.Set History))
-seq prgm1 prgm2 = do
-  prgm1 >>= prgm2
+seq :: MonadDistribution m => (SH -> m (SH)) -> (SH -> m (SH)) -> (SH -> m (SH))
+seq prgm1 prgm2 h = do
+  prgm1 h >>= prgm2
 
 -- p (+)_r q is probabilistic with chance r for p and 1-r for q
-prob :: MonadDistribution m => Double -> m (Set.Set History) -> m (Set.Set History) -> m (Set.Set History)
+prob :: MonadDistribution m => Double -> m (SH) -> m (SH) -> m (SH)
 prob r hs1 hs2 = do
   x <- bernoulli r
   if x then hs1 else hs2
