@@ -16,6 +16,12 @@ reserved words excluded.
 
 
 ===Literals===
+Double-precision float literals //Double// have the structure
+indicated by the regular expression ``digit+ '.' digit+ ('e' ('-')? digit+)?`` i.e.\
+two sequences of digits separated by a decimal point, optionally
+followed by an unsigned or negative exponent.
+
+
 Integer literals //Integer// are nonempty sequences of digits.
 
 
@@ -28,8 +34,8 @@ The reserved words used in probnetkat are the following:
   | ``drop`` | ``dup`` | ``skip`` |
 
 The symbols used in probnetkat are the following:
-  | <- | = | + | ;
-  | & |  |  |
+  | <- | = | +[ | ]
+  | ; | & | ( | )
 
 ===Comments===
 There are no single-line comments in the grammar.There are no multiple-line comments in the grammar.
@@ -40,14 +46,19 @@ The symbols -> (production),  **|**  (union)
 and **eps** (empty rule) belong to the BNF notation.
 All other symbols are terminals.
 
-  | //Exp1// | -> | //Ident// ``<-`` //Integer//
+  | //Exp2// | -> | //Ident// ``<-`` //Integer//
   |  |  **|**  | //Ident// ``=`` //Integer//
   |  |  **|**  | ``dup``
   |  |  **|**  | ``skip``
   |  |  **|**  | ``drop``
-  | //Exp// | -> | //Exp// ``+`` //Exp//
+  |  |  **|**  | //Exp3//
+  | //Exp// | -> | //Exp// ``+[`` //Double// ``]`` //Exp//
   |  |  **|**  | //Exp// ``;`` //Exp//
   |  |  **|**  | //Exp// ``&`` //Exp//
+  |  |  **|**  | //Exp1//
+  | //Exp1// | -> | //Exp2//
+  | //Exp3// | -> | //Exp4//
+  | //Exp4// | -> | ``(`` //Exp// ``)``
 
 
 

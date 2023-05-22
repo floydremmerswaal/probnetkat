@@ -6,7 +6,7 @@
 
 module Probnetkat.Abs where
 
-import Prelude (Integer, String)
+import Prelude (Double, Integer, String)
 import qualified Prelude as C (Eq, Ord, Show, Read)
 import qualified Data.String
 
@@ -16,7 +16,7 @@ data Exp
     | EDup
     | ESkip
     | EDrop
-    | Eprob Exp Exp
+    | EProb Exp Double Exp
     | ESeq Exp Exp
     | Epar Exp Exp
   deriving (C.Eq, C.Ord, C.Show, C.Read)

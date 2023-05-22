@@ -16,9 +16,9 @@ data Exp
     | EDup
     | ESkip
     | EDrop
+    | EProb Exp Exp
     | ESeq Exp Exp
     | Epar Exp Exp
-    | Eprob Ident Integer
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 newtype Ident = Ident String

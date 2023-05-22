@@ -20,7 +20,7 @@ import Control.Monad      ( when )
 
 import Probnetkat.Abs   ()
 import Probnetkat.Lex   ( Token, mkPosToken )
-import Probnetkat.Par   ( pExp1, myLexer )
+import Probnetkat.Par   ( pExp, myLexer )
 import Probnetkat.Print ( Print, printTree )
 import Probnetkat.Skel  ()
 
@@ -70,7 +70,7 @@ main = do
   args <- getArgs
   case args of
     ["--help"] -> usage
-    []         -> getContents >>= run 2 pExp1
-    "-s":fs    -> mapM_ (runFile 0 pExp1) fs
-    fs         -> mapM_ (runFile 2 pExp1) fs
+    []         -> getContents >>= run 2 pExp
+    "-s":fs    -> mapM_ (runFile 0 pExp) fs
+    fs         -> mapM_ (runFile 2 pExp) fs
 

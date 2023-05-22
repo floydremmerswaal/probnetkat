@@ -26,6 +26,6 @@ transExp x = case x of
   Probnetkat.Abs.EDup -> failure x
   Probnetkat.Abs.ESkip -> failure x
   Probnetkat.Abs.EDrop -> failure x
+  Probnetkat.Abs.EProb exp1 exp2 -> failure x
   Probnetkat.Abs.ESeq exp1 exp2 -> failure x
   Probnetkat.Abs.Epar exp1 exp2 -> failure x
-  Probnetkat.Abs.Eprob ident integer -> failure x

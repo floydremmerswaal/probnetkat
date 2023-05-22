@@ -28,7 +28,7 @@ $u = [. \n]          -- universal: any character
 
 -- Symbols and non-identifier-like reserved words
 
-@rsyms = \< \- | \= | \+ | \; | \&
+@rsyms = \< \- | \= | \+ \[ | \] | \; | \& | \( | \)
 
 :-
 
@@ -46,6 +46,10 @@ $l $i*
 -- Integer
 $d+
     { tok TI }
+
+-- Double
+$d+ \. $d+ (e (\-)? $d+)?
+    { tok TD }
 
 {
 -- | Create a token with position.
@@ -148,9 +152,10 @@ eitherResIdent tv s = treeFind resWords
 -- | The keywords and symbols of the language organized as binary search tree.
 resWords :: BTree
 resWords =
-  b "=" 5
-    (b ";" 3 (b "+" 2 (b "&" 1 N N) N) (b "<-" 4 N N))
-    (b "dup" 7 (b "drop" 6 N N) (b "skip" 8 N N))
+  b "<-" 6
+    (b ")" 3 (b "(" 2 (b "&" 1 N N) N) (b ";" 5 (b "+[" 4 N N) N))
+    (b "drop" 9
+       (b "]" 8 (b "=" 7 N N) N) (b "skip" 11 (b "dup" 10 N N) N))
   where
   b s n = B bs (TS bs n)
     where
