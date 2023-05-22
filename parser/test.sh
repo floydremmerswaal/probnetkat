@@ -1,3 +1,5 @@
+#! /bin/bash
+# Test all test cases described in .pnk files in the test directory
 total=0
 correct=0
 for OUTPUT in $(ls test/*.pnk); 
@@ -7,7 +9,7 @@ do
 		let correct=$correct+1
 		echo "Parsed $OUTPUT"
 	else
-		echo "Failed to parse $OUTPUT"
+		echo "FAILED to parse $OUTPUT"
 fi
 done
 echo "Correct $correct / $total"
