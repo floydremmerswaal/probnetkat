@@ -1,0 +1,9 @@
+EAss. Exp1 ::= Ident "<-" Integer;
+ETest. Exp1 ::= Ident "=" Integer;
+EDup. Exp1 ::= "dup";
+ESkip. Exp1 ::= "skip";
+EDrop. Exp1 ::= "drop";
+
+Eprob. Exp ::= Exp "+" Exp;
+ESeq. Exp ::= Exp ";" Exp;
+Epar. Exp ::= Exp "&" Exp;
