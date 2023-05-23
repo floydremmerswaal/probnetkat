@@ -1,11 +1,8 @@
-module Main (main) where
+module Main (main, assign, test, dup, skip, drop, seq, prob, par) where
 
-import Prelude hiding (id, (.))
+import Prelude hiding (id, (.), drop, seq)
 
-import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class ( MonadDistribution(bernoulli) )
-import Control.Monad.Bayes.Sampler.Strict
-import Control.Monad.Bayes.Enumerator
 import Control.Arrow
 import Control.Category
 
@@ -30,10 +27,6 @@ main = do
   print "Hallo"
 
 ----------- Some helper functions
--- count occurences
-count :: Eq a => a -> [a] -> Int
-count x = length . filter (== x)
-
 
 -- assign value to a specific field in a packet
 assignField :: Packet -> Field -> Packet
@@ -51,10 +44,10 @@ dupHead (x:xs) = [x,x] ++ xs
 
 ----------- Atomic operations
 assign :: MonadDistribution m => Field -> Kleisli m SH SH
-assign f = arr $ Set.map (\h -> assignHead h f)
+assign f = arr $ Set.map (`assignHead` f)
 
 test :: MonadDistribution m => Field -> Kleisli m SH SH
-test f = arr $ Set.filter (any (any (== f)) . listToMaybe)
+test f = arr $ Set.filter (any (elem f) . listToMaybe)
 
 dup :: MonadDistribution m => Kleisli m SH SH
 dup = arr (Set.map dupHead)
@@ -63,7 +56,7 @@ skip :: MonadDistribution m => Kleisli m SH SH
 skip = id
 
 drop :: MonadDistribution m => Kleisli m SH SH
-drop = arr $ \_ -> Set.empty
+drop = arr $ const Set.empty
 
 
 ----------- Probabilistic operators
@@ -73,8 +66,8 @@ drop = arr $ \_ -> Set.empty
 
 
 -- p & q is parallel composition, so we need to take the union of the two sets of histories
-parSets :: MonadDistribution m => SH -> (SH -> m SH) -> (SH -> m (SH)) -> m (SH)
-parSets sh prgm1 prgm2 = do
+par :: MonadDistribution m => SH -> (SH -> m SH) -> (SH -> m (SH)) -> m (SH)
+par sh prgm1 prgm2 = do
   sample1 <- prgm1 sh
   sample2 <- prgm2 sh
   return $ Set.union sample1 sample2
