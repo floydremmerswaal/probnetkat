@@ -1,14 +1,13 @@
 entrypoints Exp;
 
-EAss. Exp2 ::= Ident "<-" Integer;
-ETest. Exp2 ::= Ident "=" Integer;
-EDup. Exp2 ::= "dup";
-ESkip. Exp2 ::= "skip";
-EDrop. Exp2 ::= "drop";
+EAss. Exp3 ::= Ident "<-" Integer;
+ETest. Exp3 ::= Ident "=" Integer;
+EDup. Exp3 ::= "dup";
+ESkip. Exp3 ::= "skip";
+EDrop. Exp3 ::= "drop";
 
+ESeq. Exp2 ::= Exp2 ";" Exp3;
+EProb. Exp1 ::= Exp1 "+[" Double "]" Exp2;
+Epar. Exp ::= Exp "&" Exp1;
 
-EProb. Exp ::= Exp "+["Double"]" Exp;
-ESeq. Exp ::= Exp ";" Exp;
-Epar. Exp ::= Exp "&" Exp;
-
-coercions Exp 4;
+coercions Exp 3;

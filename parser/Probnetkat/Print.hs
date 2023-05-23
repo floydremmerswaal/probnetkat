@@ -142,11 +142,11 @@ instance Print Probnetkat.Abs.Ident where
   prt _ (Probnetkat.Abs.Ident i) = doc $ showString i
 instance Print Probnetkat.Abs.Exp where
   prt i = \case
-    Probnetkat.Abs.EAss id_ n -> prPrec i 2 (concatD [prt 0 id_, doc (showString "<-"), prt 0 n])
-    Probnetkat.Abs.ETest id_ n -> prPrec i 2 (concatD [prt 0 id_, doc (showString "="), prt 0 n])
-    Probnetkat.Abs.EDup -> prPrec i 2 (concatD [doc (showString "dup")])
-    Probnetkat.Abs.ESkip -> prPrec i 2 (concatD [doc (showString "skip")])
-    Probnetkat.Abs.EDrop -> prPrec i 2 (concatD [doc (showString "drop")])
-    Probnetkat.Abs.EProb exp1 d exp2 -> prPrec i 0 (concatD [prt 0 exp1, doc (showString "+["), prt 0 d, doc (showString "]"), prt 0 exp2])
-    Probnetkat.Abs.ESeq exp1 exp2 -> prPrec i 0 (concatD [prt 0 exp1, doc (showString ";"), prt 0 exp2])
-    Probnetkat.Abs.Epar exp1 exp2 -> prPrec i 0 (concatD [prt 0 exp1, doc (showString "&"), prt 0 exp2])
+    Probnetkat.Abs.EAss id_ n -> prPrec i 3 (concatD [prt 0 id_, doc (showString "<-"), prt 0 n])
+    Probnetkat.Abs.ETest id_ n -> prPrec i 3 (concatD [prt 0 id_, doc (showString "="), prt 0 n])
+    Probnetkat.Abs.EDup -> prPrec i 3 (concatD [doc (showString "dup")])
+    Probnetkat.Abs.ESkip -> prPrec i 3 (concatD [doc (showString "skip")])
+    Probnetkat.Abs.EDrop -> prPrec i 3 (concatD [doc (showString "drop")])
+    Probnetkat.Abs.ESeq exp1 exp2 -> prPrec i 2 (concatD [prt 2 exp1, doc (showString ";"), prt 3 exp2])
+    Probnetkat.Abs.EProb exp1 d exp2 -> prPrec i 1 (concatD [prt 1 exp1, doc (showString "+["), prt 0 d, doc (showString "]"), prt 2 exp2])
+    Probnetkat.Abs.Epar exp1 exp2 -> prPrec i 0 (concatD [prt 0 exp1, doc (showString "&"), prt 1 exp2])

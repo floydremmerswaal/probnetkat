@@ -49,30 +49,25 @@ Double   : L_doubl  { (read $1) :: Double }
 Integer :: { Integer }
 Integer  : L_integ  { (read $1) :: Integer }
 
-Exp2 :: { Probnetkat.Abs.Exp }
-Exp2
+Exp3 :: { Probnetkat.Abs.Exp }
+Exp3
   : Ident '<-' Integer { Probnetkat.Abs.EAss $1 $3 }
   | Ident '=' Integer { Probnetkat.Abs.ETest $1 $3 }
   | 'dup' { Probnetkat.Abs.EDup }
   | 'skip' { Probnetkat.Abs.ESkip }
   | 'drop' { Probnetkat.Abs.EDrop }
-  | Exp3 { $1 }
+  | '(' Exp ')' { $2 }
 
-Exp :: { Probnetkat.Abs.Exp }
-Exp
-  : Exp '+[' Double ']' Exp { Probnetkat.Abs.EProb $1 $3 $5 }
-  | Exp ';' Exp { Probnetkat.Abs.ESeq $1 $3 }
-  | Exp '&' Exp { Probnetkat.Abs.Epar $1 $3 }
-  | Exp1 { $1 }
+Exp2 :: { Probnetkat.Abs.Exp }
+Exp2 : Exp2 ';' Exp3 { Probnetkat.Abs.ESeq $1 $3 } | Exp3 { $1 }
 
 Exp1 :: { Probnetkat.Abs.Exp }
-Exp1 : Exp2 { $1 }
+Exp1
+  : Exp1 '+[' Double ']' Exp2 { Probnetkat.Abs.EProb $1 $3 $5 }
+  | Exp2 { $1 }
 
-Exp3 :: { Probnetkat.Abs.Exp }
-Exp3 : Exp4 { $1 }
-
-Exp4 :: { Probnetkat.Abs.Exp }
-Exp4 : '(' Exp ')' { $2 }
+Exp :: { Probnetkat.Abs.Exp }
+Exp : Exp '&' Exp1 { Probnetkat.Abs.Epar $1 $3 } | Exp1 { $1 }
 
 {
 

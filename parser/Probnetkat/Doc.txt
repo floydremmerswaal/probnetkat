@@ -34,8 +34,8 @@ The reserved words used in probnetkat are the following:
   | ``drop`` | ``dup`` | ``skip`` |
 
 The symbols used in probnetkat are the following:
-  | <- | = | +[ | ]
-  | ; | & | ( | )
+  | <- | = | ; | +[
+  | ] | & | ( | )
 
 ===Comments===
 There are no single-line comments in the grammar.There are no multiple-line comments in the grammar.
@@ -46,19 +46,18 @@ The symbols -> (production),  **|**  (union)
 and **eps** (empty rule) belong to the BNF notation.
 All other symbols are terminals.
 
-  | //Exp2// | -> | //Ident// ``<-`` //Integer//
+  | //Exp3// | -> | //Ident// ``<-`` //Integer//
   |  |  **|**  | //Ident// ``=`` //Integer//
   |  |  **|**  | ``dup``
   |  |  **|**  | ``skip``
   |  |  **|**  | ``drop``
+  |  |  **|**  | ``(`` //Exp// ``)``
+  | //Exp2// | -> | //Exp2// ``;`` //Exp3//
   |  |  **|**  | //Exp3//
-  | //Exp// | -> | //Exp// ``+[`` //Double// ``]`` //Exp//
-  |  |  **|**  | //Exp// ``;`` //Exp//
-  |  |  **|**  | //Exp// ``&`` //Exp//
+  | //Exp1// | -> | //Exp1// ``+[`` //Double// ``]`` //Exp2//
+  |  |  **|**  | //Exp2//
+  | //Exp// | -> | //Exp// ``&`` //Exp1//
   |  |  **|**  | //Exp1//
-  | //Exp1// | -> | //Exp2//
-  | //Exp3// | -> | //Exp4//
-  | //Exp4// | -> | ``(`` //Exp// ``)``
 
 
 

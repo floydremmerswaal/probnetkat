@@ -1,11 +1,13 @@
 module Main (main) where
-  
+
+import Prelude hiding (id, (.))
+
 import Control.Monad (replicateM)
 import Control.Monad.Bayes.Class ( MonadDistribution(bernoulli) )
 import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.Bayes.Enumerator
-import Control.Arrow ((>>>))
-import Data.Bits (Bits(xor))
+import Control.Arrow
+import Control.Category
 
 import qualified Data.Set as Set
 import Data.Set (Set)
@@ -48,22 +50,20 @@ dupHead [] = []
 dupHead (x:xs) = [x,x] ++ xs
 
 ----------- Atomic operations
-assign :: MonadDistribution m => Field -> SH -> m (SH)
-assign f hs = do
-  let hs' = Set.map (\h -> assignHead h f) hs
-  return hs'
+assign :: MonadDistribution m => Field -> Kleisli m SH SH
+assign f = arr $ Set.map (\h -> assignHead h f)
 
-test :: MonadDistribution m => Field -> SH -> m (SH)
-test f = return . Set.filter (any (any (== f)) . listToMaybe)
+test :: MonadDistribution m => Field -> Kleisli m SH SH
+test f = arr $ Set.filter (any (any (== f)) . listToMaybe)
 
-dup :: MonadDistribution m => SH -> m (SH)
-dup hs = return (Set.map dupHead hs)
+dup :: MonadDistribution m => Kleisli m SH SH
+dup = arr (Set.map dupHead)
 
-skip :: MonadDistribution m => SH -> m (SH)
-skip hs = return hs
+skip :: MonadDistribution m => Kleisli m SH SH
+skip = id
 
-drop :: MonadDistribution m => SH -> m (SH)
-drop hs = return Set.empty
+drop :: MonadDistribution m => Kleisli m SH SH
+drop = arr $ \_ -> Set.empty
 
 
 ----------- Probabilistic operators
@@ -89,7 +89,7 @@ parSets sh prgm1 prgm2 = do
 --   return $ parSets o1 o2
 
 -- p ; q is sequential composition
-seq :: MonadDistribution m => (SH -> m (SH)) -> (m SH -> m (SH)) -> (SH -> m (SH))
+seq :: MonadDistribution m => Kleisli m SH SH  -> Kleisli m SH SH  -> Kleisli m SH SH
 seq = (>>>)
 
 
