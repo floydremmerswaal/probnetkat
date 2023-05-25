@@ -20,7 +20,7 @@ type SH = Set History
 
 -- define show not really good haskell but makes it a bit more readable at the moment
 instance Show Field where
-  show (Field name value) = "{" ++ show name ++ ":" ++ show value ++ "}"
+  show (Field n v) = "{" ++ show n ++ ":" ++ show v ++ "}"
 
 main :: IO ()
 main = do
@@ -50,7 +50,7 @@ test :: MonadDistribution m => Field -> Kleisli m SH SH
 test f = arr $ Set.filter (any (elem f) . listToMaybe)
 
 dup :: MonadDistribution m => Kleisli m SH SH
-dup = arr (Set.map dupHead)
+dup = arr $ Set.map dupHead
 
 skip :: MonadDistribution m => Kleisli m SH SH
 skip = id
@@ -66,13 +66,15 @@ drop = arr $ const Set.empty
 
 
 -- p & q is parallel composition, so we need to take the union of the two sets of histories
-par :: MonadDistribution m => SH -> (SH -> m SH) -> (SH -> m (SH)) -> m (SH)
-par sh prgm1 prgm2 = do
+parOld :: MonadDistribution m => SH -> (SH -> m SH) -> (SH -> m (SH)) -> m (SH)
+parOld sh prgm1 prgm2 = do
   sample1 <- prgm1 sh
   sample2 <- prgm2 sh
   return $ Set.union sample1 sample2
 -- Dit kan elegeant met Arrow? LiftA2?
 
+par :: MonadDistribution m => Kleisli m SH SH -> Kleisli m SH SH -> Kleisli m SH SH
+par = liftA2 Set.union
 
 -- par on programs
 -- par :: MonadDistribution m => (SH -> m (SH)) -> (SH -> m (SH)) -> (SH -> m (SH))
@@ -92,7 +94,8 @@ seq = (>>>)
 --   prgm1 h >>= prgm2
 
 -- p (+)_r q is probabilistic with chance r for p and 1-r for q
-prob :: MonadDistribution m => Double -> m (SH) -> m (SH) -> m (SH)
+prob :: MonadDistribution m => Double -> m SH -> m SH -> m SH
 prob r hs1 hs2 = do
   x <- bernoulli r
   if x then hs1 else hs2
+
