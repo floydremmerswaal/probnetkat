@@ -5,6 +5,7 @@ import Prelude hiding (id, (.), drop, seq)
 import Control.Monad.Bayes.Class ( MonadDistribution(bernoulli) )
 import Control.Arrow
 import Control.Category
+import Control.Applicative (liftA2)
 
 import qualified Data.Set as Set
 import Data.Set (Set)
@@ -98,4 +99,3 @@ prob :: MonadDistribution m => Double -> m SH -> m SH -> m SH
 prob r hs1 hs2 = do
   x <- bernoulli r
   if x then hs1 else hs2
-
