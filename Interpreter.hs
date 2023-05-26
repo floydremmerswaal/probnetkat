@@ -3,7 +3,7 @@ module Interpreter where
 -- import stuff
 import Probnetkat.Abs -- abstract syntax tree, is the import correct?
 
-import app.Main 
+import Probnetkat 
 
 -- 
 -- data Exp
@@ -20,11 +20,11 @@ import app.Main
 
 interpret :: Exp -> Integer
 interpret x = case x of
-    EAss = assign
-    ETest = test
+    EAss n v -> assign n v
+    ETest n v= test n v
     EDup = dup
     ESkip = skip
     EDrop = drop
-    ESeq = seq
-    EProb = prob
-    Epar = par
+    ESeq e1 e2 = seq (interpret e1) (interpret e2)
+    EProb e1 p e2 = prob p (interpret e1) (interpret e2)
+    Epar e1 e2 = par (interpret e1) ( interpet e2)
