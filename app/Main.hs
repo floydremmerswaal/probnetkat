@@ -23,9 +23,11 @@ type SH = Set History
 instance Show Field where
   show (Field n v) = "{" ++ show n ++ ":" ++ show v ++ "}"
 
+-- main function
 main :: IO ()
 main = do
   print "Hallo"
+
 
 ----------- Some helper functions
 
@@ -67,11 +69,11 @@ drop = arr $ const Set.empty
 
 
 -- p & q is parallel composition, so we need to take the union of the two sets of histories
-parOld :: MonadDistribution m => SH -> (SH -> m SH) -> (SH -> m (SH)) -> m (SH)
-parOld sh prgm1 prgm2 = do
-  sample1 <- prgm1 sh
-  sample2 <- prgm2 sh
-  return $ Set.union sample1 sample2
+-- parOld :: MonadDistribution m => SH -> (SH -> m SH) -> (SH -> m (SH)) -> m (SH)
+-- parOld sh prgm1 prgm2 = do
+--   sample1 <- prgm1 sh
+--   sample2 <- prgm2 sh
+--   return $ Set.union sample1 sample2
 -- Dit kan elegeant met Arrow? LiftA2?
 
 par :: MonadDistribution m => Kleisli m SH SH -> Kleisli m SH SH -> Kleisli m SH SH

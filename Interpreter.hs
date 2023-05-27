@@ -21,10 +21,10 @@ import Probnetkat
 interpret :: Exp -> Integer
 interpret x = case x of
     EAss n v -> assign n v
-    ETest n v= test n v
-    EDup = dup
-    ESkip = skip
-    EDrop = drop
-    ESeq e1 e2 = seq (interpret e1) (interpret e2)
-    EProb e1 p e2 = prob p (interpret e1) (interpret e2)
-    Epar e1 e2 = par (interpret e1) ( interpet e2)
+    ETest n v -> test n v
+    EDup -> dup
+    ESkip -> skip
+    EDrop -> drop
+    ESeq e1 e2 -> seq (interpret e1) (interpret e2)
+    EProb e1 p e2 -> prob p (interpret e1) (interpret e2)
+    Epar e1 e2 -> par (interpret e1) ( interpet e2)
