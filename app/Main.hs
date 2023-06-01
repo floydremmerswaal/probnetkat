@@ -101,3 +101,12 @@ prob :: MonadDistribution m => Double -> m SH -> m SH -> m SH
 prob r hs1 hs2 = do
   x <- bernoulli r
   if x then hs1 else hs2
+
+
+probK :: MonadDistribution m => Double -> Kleisli m SH SH -> Kleisli m SH SH -> Kleisli m SH SH
+prob r f g = Kleisli $ \h -> 
+Henning zegt:do 
+Henning zegt:x <- bernoulli r 
+Henning zegt:if x then f h else g h 
+
+f h moet nog runKleisli f h oid zijn
