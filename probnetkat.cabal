@@ -42,6 +42,7 @@ library
 executable probnetkat-exe
   main-is: Main.hs
   other-modules:
+      ProbnetkatSem
       Paths_probnetkat
   hs-source-dirs:
       app

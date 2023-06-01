@@ -9,6 +9,8 @@ module Probnetkat.Skel where
 import Prelude (($), Either(..), String, (++), Show, show)
 import qualified Probnetkat.Abs
 
+import ProbnetkatSem
+
 type Err = Either String
 type Result = Err String
 
