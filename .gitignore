@@ -1,4 +1,5 @@
 .stack-work/
 *~
-Probnetkat/*.o
-Probnetkat/*.hi
+src/Syntax/*.o
+src/Syntax/*.hi
+.vscode

@@ -9,6 +9,8 @@ copyright: "2023 Floyd Remmerswaal"
 extra-source-files:
   - README.md
   - CHANGELOG.md
+  - src/Syntax/Lex.x
+  - src/Syntax/Par.y
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -25,6 +27,8 @@ dependencies:
   - log-domain >= 0.13.2
   - monad-extras >= 0.6.0
   - containers >= 0.6.5.1
+  - array
+  - containers
 
 ghc-options:
   - -Wall
@@ -42,7 +46,7 @@ library:
 
 executables:
   probnetkat-exe:
-    main: Main.hs
+    main: .hs
     source-dirs: app
     ghc-options:
       - -threaded

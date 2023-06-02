@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.1.
+-- This file has been generated from package.yaml by hpack version 0.35.2.
 --
 -- see: https://github.com/sol/hpack
 
@@ -18,6 +18,8 @@ build-type:     Simple
 extra-source-files:
     README.md
     CHANGELOG.md
+    src/Syntax/Lex.x
+    src/Syntax/Par.y
 
 source-repository head
   type: git
@@ -25,31 +27,40 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Semantics
+      Syntax.Abs
+      Syntax.ErrM
+      Syntax.Lex
+      Syntax.Par
+      Syntax.Print
+      Syntax.Skel
+      Syntax.Test
   other-modules:
       Paths_probnetkat
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
-    , containers >=0.6.5.1
+      array
+    , base >=4.7 && <5
+    , containers
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
   default-language: Haskell2010
 
 executable probnetkat-exe
-  main-is: Main.hs
+  main-is: .hs
   other-modules:
-      ProbnetkatSem
+      Main
       Paths_probnetkat
   hs-source-dirs:
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , containers >=0.6.5.1
+      array
+    , base >=4.7 && <5
+    , containers
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
@@ -65,8 +76,9 @@ test-suite probnetkat-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , containers >=0.6.5.1
+      array
+    , base >=4.7 && <5
+    , containers
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
