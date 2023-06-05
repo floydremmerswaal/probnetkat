@@ -46,7 +46,7 @@ library:
 
 executables:
   probnetkat-exe:
-    main: .hs
+    main: Main.hs
     source-dirs: app
     ghc-options:
       - -threaded
@@ -54,6 +54,9 @@ executables:
       - -with-rtsopts=-N
     dependencies:
       - probnetkat
+    build-tools:
+      - alex
+      - happy
 
 tests:
   probnetkat-test:

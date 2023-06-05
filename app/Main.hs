@@ -1,4 +1,4 @@
-module Main (main) where
+module Main (Main.main) where
     -- main function
 
 import Syntax.Lex
