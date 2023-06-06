@@ -1,8 +1,8 @@
-module Semantics (main, assign, test, dup, skip, drop, seq, prob, par, Field, Packet, History, SH) where
+module Semantics (main, assign, test, dup, skip, drop, seq, prob, par, Field(..), Packet, History, SH) where
 
 import Prelude hiding (id, (.), drop, seq)
 
-import Control.Monad.Bayes.Class ( MonadDistribution(bernoulli), Distribution )
+import Control.Monad.Bayes.Class ( MonadDistribution(bernoulli) )
 import Control.Arrow
 import Control.Category
 import Control.Applicative (liftA2)
@@ -18,6 +18,8 @@ type Packet = [Field]
 type History = [Packet]
 
 type SH = Set History
+
+type KSH m = Kleisli m SH SH
 
 -- define show, not really good haskell but makes it a bit more readable at the moment
 instance Show Field where
@@ -46,19 +48,19 @@ dupHead [] = []
 dupHead (x:xs) = [x,x] ++ xs
 
 ----------- Atomic operations
-assign :: MonadDistribution m => Field -> Kleisli m SH SH
+assign :: MonadDistribution m => Field -> KSH m
 assign f = arr $ Set.map (`assignHead` f)
 
-test :: MonadDistribution m => Field -> Kleisli m SH SH
+test :: MonadDistribution m => Field -> KSH m
 test f = arr $ Set.filter (any (elem f) . listToMaybe)
 
-dup :: MonadDistribution m => Kleisli m SH SH
+dup :: MonadDistribution m => KSH m
 dup = arr $ Set.map dupHead
 
-skip :: MonadDistribution m => Kleisli m SH SH
+skip :: MonadDistribution m => KSH m
 skip = id
 
-drop :: MonadDistribution m => Kleisli m SH SH
+drop :: MonadDistribution m => KSH m
 drop = arr $ const Set.empty
 
 
@@ -76,7 +78,7 @@ drop = arr $ const Set.empty
 --   return $ Set.union sample1 sample2
 -- Dit kan elegeant met Arrow? LiftA2?
 
-par :: MonadDistribution m => Kleisli m SH SH -> Kleisli m SH SH -> Kleisli m SH SH
+par :: MonadDistribution m => KSH m -> KSH m -> KSH m
 par = liftA2 Set.union
 
 -- par on programs
@@ -87,7 +89,7 @@ par = liftA2 Set.union
 --   return $ parSets o1 o2
 
 -- p ; q is sequential composition
-seq :: MonadDistribution m => Kleisli m SH SH  -> Kleisli m SH SH  -> Kleisli m SH SH
+seq :: MonadDistribution m => KSH m  -> KSH m  -> KSH m
 seq = (>>>)
 
 
@@ -111,7 +113,7 @@ seq = (>>>)
 
 -- f h moet nog runKleisli f h oid zijn
 
-prob :: MonadDistribution m => Double -> Kleisli m SH SH -> Kleisli m SH SH -> Kleisli m SH SH
+prob :: MonadDistribution m => Double -> KSH m -> KSH m -> KSH m
 prob r f g = Kleisli $ \h -> do
   x <- bernoulli r
   if x then runKleisli f h else runKleisli g h

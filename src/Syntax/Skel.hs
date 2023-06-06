@@ -9,6 +9,12 @@ module Syntax.Skel where
 import Prelude (($), Either(..), String, (++), Show, show)
 import qualified Syntax.Abs
 
+import Control.Arrow
+import Control.Category
+import Control.Monad
+
+import Semantics 
+
 type Err = Either String
 type Result = Err String
 
