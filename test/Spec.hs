@@ -1,3 +1,6 @@
+import Syntax.Abs
+import Test.Hspec
+
 main :: IO ()
 main = hspec $ do
     describe "Probnetkat parser" $ do

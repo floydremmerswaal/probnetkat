@@ -48,6 +48,8 @@ dupHead [] = []
 dupHead (x:xs) = [x,x] ++ xs
 
 ----------- Atomic operations
+
+--- assign uses a Field at the moment, we might want to use string and int instead in the future
 assign :: MonadDistribution m => Field -> KSH m
 assign f = arr $ Set.map (`assignHead` f)
 

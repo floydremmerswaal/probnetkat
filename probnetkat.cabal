@@ -81,6 +81,7 @@ test-suite probnetkat-test
       array
     , base >=4.7 && <5
     , containers
+    , hspec
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0

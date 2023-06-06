@@ -1,0 +1,1 @@
+dup; pt <- 1; sw <- 1; skip; dup; drop & dup
