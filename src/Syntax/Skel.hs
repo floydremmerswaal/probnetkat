@@ -16,16 +16,16 @@ import Control.Monad
 import Semantics 
 
 type Err = Either String
-type Result = Err String
+type Result m = Err (Kleisli m SH SH)
 
-failure :: Show a => a -> Result
+failure :: Show a => a -> Result m
 failure x = Left $ "Undefined case: " ++ show x
 
-transIdent :: Syntax.Abs.Ident -> Result
+transIdent :: Syntax.Abs.Ident -> Result m
 transIdent x = case x of
   Syntax.Abs.Ident string -> failure x
 
-transExp :: Syntax.Abs.Exp -> Result
+transExp :: Syntax.Abs.Exp -> Result m
 transExp x = case x of
   Syntax.Abs.EAss ident integer -> failure x
   Syntax.Abs.ETest ident integer -> failure x

@@ -15,6 +15,7 @@ import Semantics
 
 
 import Syntax.ErrM
+import Syntax.Skel (transExp)
 
 type ParseFun a = [Token] -> Err a
 
@@ -25,6 +26,24 @@ type Verbosity = Int
 
 putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
+
+runFileAndIO :: (Print a, Show a) => Verbosity -> ParseFun a -> FilePath -> IO ()
+runFileAndIO v p f = do
+  runFile v p f
+  putStrLn "Starting interactive session..."
+  interactiveSession
+
+interactiveSession :: IO ()
+interactiveSession = do 
+  putStr ""
+  line <- getLine
+  if line == "quit" 
+    then putStrLn "Bye"
+    else do
+      case line of 
+          "" -> putStrLn "success!"
+          _      -> putStrLn "unknown command"
+      interactiveSession 
 
 runFile :: (Print a, Show a) => Verbosity -> ParseFun a -> FilePath -> IO ()
 runFile v p f = putStrLn f >> readFile f >>= run v p
@@ -67,5 +86,5 @@ main = do
     ["--help"] -> usage
     []         -> getContents >>= run 2 pExp
     "-s":fs    -> mapM_ (runFile 0 pExp) fs
-    fs         -> mapM_ (runFile 2 pExp) fs
+    fs         -> mapM_ (runFileAndIO 2 pExp) fs
 

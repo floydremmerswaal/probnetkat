@@ -1,1 +1,1 @@
-dup; pt <- 1; sw <- 1; skip; dup; drop & dup
+dup; ((sw <- 1; pt <- 1) +[0.5] (sw <- 2; pt <- 2))
