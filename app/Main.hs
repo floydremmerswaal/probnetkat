@@ -7,7 +7,8 @@ import System.IO ( stdin, hGetContents )
 import System.Environment ( getArgs, getProgName )
 import System.Exit ( exitFailure, exitSuccess )
 import Control.Monad (when)
-
+import qualified Data.Set as Set
+import Data.Set (Set)
 
 import Syntax.Lex
 import Syntax.Par
@@ -109,8 +110,9 @@ testF fs = do
     Right tree -> do
       putStrLn "\nParse Successful!"
       print tree
-      let program = transExpBare tree
-      print "Function is defined"
+      let kleisliArrow = transExpBare tree :: MonadDistribution m => Kleisli m SH SH
+          sh = runKleisli kleisliArrow Set.empty
+      putStrLn "Function is defined"
 
 
 transExpBare :: MonadDistribution m => Syntax.Abs.Exp -> Kleisli m SH SH

@@ -1,4 +1,4 @@
-module Semantics (main, assign, test, dup, skip, drop, seq, prob, par, Field(..), Packet, History, SH, KSH) where
+module Semantics (assign, test, dup, skip, drop, seq, prob, par, Field(..), Packet, History, SH, KSH) where
 
 import Prelude hiding (id, (.), drop, seq)
 
@@ -26,11 +26,6 @@ type KSH m = Kleisli m SH SH
 -- define show, not really good haskell but makes it a bit more readable at the moment
 instance Show Field where
   show (Field n v) = "{" ++ show n ++ ":" ++ show v ++ "}"
-
--- main function
-main :: IO ()
-main = do
-  print "Hallo"
 
 
 ----------- Some helper functions
