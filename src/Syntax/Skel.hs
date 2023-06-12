@@ -13,6 +13,8 @@ import Control.Arrow
 import Control.Category
 import Control.Monad
 
+import Control.Monad.Bayes.Class
+
 import Semantics 
 
 type Err = Either String
@@ -25,13 +27,25 @@ transIdent :: Syntax.Abs.Ident -> Result m
 transIdent x = case x of
   Syntax.Abs.Ident string -> failure x
 
-transExp :: Syntax.Abs.Exp -> Result m
+transExp :: MonadDistribution m => Syntax.Abs.Exp -> Result m
 transExp x = case x of
-  Syntax.Abs.EAss ident integer -> failure x
-  Syntax.Abs.ETest ident integer -> failure x
-  Syntax.Abs.EDup -> failure x
-  Syntax.Abs.ESkip -> failure x
-  Syntax.Abs.EDrop -> failure x
+  Syntax.Abs.EAss ident integer -> Right $ assign (Field ident integer)
+  Syntax.Abs.ETest ident integer -> Right $ test (Field ident integer)
+  Syntax.Abs.EDup -> Right dup
+  Syntax.Abs.ESkip -> Right skip
+  Syntax.Abs.EDrop -> Right drop
   Syntax.Abs.ESeq exp1 exp2 -> failure x
   Syntax.Abs.EProb exp1 double exp2 -> failure x
   Syntax.Abs.Epar exp1 exp2 -> failure x
+
+
+transExpBare :: MonadDistribution m => Syntax.Abs.Exp -> Kleisli m SH SH
+transExpBare x = case x of
+  Syntax.Abs.EAss ident integer -> assign (Field ident integer)
+  Syntax.Abs.ETest ident integer -> test (Field ident integer)
+  Syntax.Abs.EDup -> dup
+  Syntax.Abs.ESkip -> skip
+  Syntax.Abs.EDrop -> drop
+  Syntax.Abs.ESeq exp1 exp2 -> seq (transExpBare exp1) (transExpBare exp2)
+  Syntax.Abs.EProb exp1 double exp2 -> prob double (transExpBare exp1)  (transExpBare exp2)
+  Syntax.Abs.Epar exp1 exp2 -> par (transExpBare exp1) (transExpBare exp2)

@@ -1,4 +1,4 @@
-module Semantics (main, assign, test, dup, skip, drop, seq, prob, par, Field(..), Packet, History, SH) where
+module Semantics (main, assign, test, dup, skip, drop, seq, prob, par, Field(..), Packet, History, SH, KSH) where
 
 import Prelude hiding (id, (.), drop, seq)
 
@@ -12,8 +12,10 @@ import Data.Set (Set)
 
 import Data.Maybe (listToMaybe)
 
+import Syntax.Abs (Ident(..))
+
 -- Type definitions
-data Field = Field { name :: String, value :: Int } deriving (Eq, Ord)
+data Field = Field { name :: Ident, value :: Integer } deriving (Eq, Ord)
 type Packet = [Field]
 type History = [Packet]
 
