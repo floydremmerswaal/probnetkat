@@ -108,6 +108,6 @@ testF fs = do
     Right tree -> do
       putStrLn "\nParse Successful!"
       print tree
-      let kleisliArrow = transExp tree
+      let kleisliArrow = transExp tree :: MonadDistributionn m => Kleisli m SH SH
       let sh = runKleisli kleisliArrow Set.empty
       putStrLn "Function is defined"

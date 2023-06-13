@@ -14,6 +14,12 @@ import Control.Monad.Bayes.Class
 import Control.Arrow
 import Semantics 
 
+-- type Err = Either String
+-- type Result m = Err (Kleisli m SH SH)
+-- transIdent :: Syntax.Abs.Ident -> Result m
+-- transIdent x = case x of
+--   Syntax.Abs.Ident string -> failure x
+
 
 transExp :: MonadDistribution m => Syntax.Abs.Exp -> Kleisli m SH SH
 transExp x = case x of
