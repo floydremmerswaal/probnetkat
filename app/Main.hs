@@ -102,12 +102,12 @@ testF fs = do
   let ts = myLexer s
   case pExp ts of
     Left err -> do
-      putStrLn "\nParse              Failed...\n"
+      putStrLn "\nParse Failed...\n"
       putStrLn err
       exitFailure
     Right tree -> do
       putStrLn "\nParse Successful!"
       print tree
-      --let kleisliArrow = transExp tree :: MonadDistribution m => Kleisli m SH SH
-      --    sh = runKleisli kleisliArrow Set.empty
+      let kleisliArrow = transExp tree
+      let sh = runKleisli kleisliArrow Set.empty
       putStrLn "Function is defined"

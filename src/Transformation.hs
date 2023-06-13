@@ -4,7 +4,7 @@
 
 {-# OPTIONS_GHC -fno-warn-unused-matches #-}
 
-module Transformation where
+module Transformation (transExp) where
 
 import Prelude hiding (drop, seq)
 import qualified Syntax.Abs
@@ -13,6 +13,7 @@ import Control.Monad.Bayes.Class
 
 import Control.Arrow
 import Semantics 
+
 
 transExp :: MonadDistribution m => Syntax.Abs.Exp -> Kleisli m SH SH
 transExp x = case x of
