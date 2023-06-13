@@ -3,8 +3,7 @@ module Main (Main.main) where
 
 import Prelude hiding (drop, seq)
 
-import System.IO ( stdin, hGetContents )
-import System.Environment ( getArgs, getProgName )
+import System.Environment ( getArgs )
 import System.Exit ( exitFailure, exitSuccess )
 import Control.Monad (when)
 import qualified Data.Set as Set
@@ -15,13 +14,12 @@ import Syntax.Par
 import Syntax.Print
 import Syntax.Abs
 import Semantics
+import Transformation
 
 import Control.Monad.Bayes.Class
 import Control.Arrow
 
 import Syntax.ErrM
-import Syntax.Skel (transExp)
-
 
 type ParseFun a = [Token] -> Err a
 
@@ -110,18 +108,6 @@ testF fs = do
     Right tree -> do
       putStrLn "\nParse Successful!"
       print tree
-      let kleisliArrow = transExpBare tree :: MonadDistribution m => Kleisli m SH SH
-          sh = runKleisli kleisliArrow Set.empty
+      --let kleisliArrow = transExp tree :: MonadDistribution m => Kleisli m SH SH
+      --    sh = runKleisli kleisliArrow Set.empty
       putStrLn "Function is defined"
-
-
-transExpBare :: MonadDistribution m => Syntax.Abs.Exp -> Kleisli m SH SH
-transExpBare x = case x of
-  Syntax.Abs.EAss ident integer -> assign (Field ident integer)
-  Syntax.Abs.ETest ident integer -> test (Field ident integer)
-  Syntax.Abs.EDup -> dup
-  Syntax.Abs.ESkip -> skip
-  Syntax.Abs.EDrop -> drop
-  Syntax.Abs.ESeq exp1 exp2 -> seq (transExpBare exp1) (transExpBare exp2)
-  Syntax.Abs.EProb exp1 double exp2 -> prob double (transExpBare exp1)  (transExpBare exp2)
-  Syntax.Abs.Epar exp1 exp2 -> par (transExpBare exp1) (transExpBare exp2)

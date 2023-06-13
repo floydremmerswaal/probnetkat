@@ -35,6 +35,7 @@ library
       Syntax.Print
       Syntax.Skel
       Syntax.Test
+      Transformation
   other-modules:
       Paths_probnetkat
   hs-source-dirs:

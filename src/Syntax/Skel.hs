@@ -10,8 +10,6 @@ import Prelude (($), Either(..), String, (++), Show, show)
 import qualified Syntax.Abs
 
 import Control.Arrow
-import Control.Category
-import Control.Monad
 
 import Control.Monad.Bayes.Class
 
