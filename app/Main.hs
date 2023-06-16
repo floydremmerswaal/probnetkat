@@ -116,13 +116,8 @@ testF fs = do
       putStrLn "\nParse Successful!"
       print tree
       let kleisliArrow = transExp tree ::  Kleisli Enumerator SH SH
-      let sw = Field (Ident "sw") 1
-      let sh = Set.fromList [[[sw]]]
-      let empty = Set.empty
-      let result1 = runKleisli kleisliArrow sh
-      let result2 = runKleisli kleisliArrow empty
-      let samples1 = enumerator result1
-      let samples2 = enumerator result2
-      print samples1 -- this should output sw = 1 and pt = 1
-      print samples2 -- if adding fields if not present works, this should be the same
       putStrLn "Function is defined"
+      let result = runKleisli kleisliArrow Set.empty
+      let samples = enumerator result
+      putStrLn "Function output:"
+      print samples

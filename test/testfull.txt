@@ -1,0 +1,11 @@
+/*  
+    this is a multi line comment
+    and should be ignored
+*/
+
+// this is a regular comment and should be ignored
+// we first define the starting packet
+sw <- 1;
+pt <- 1;
+skip; dup; (sw <- 2 +[0.25] sw <- 3) ; (pt <- 2 & pt <- 3); sw = 2; pt = 3
+

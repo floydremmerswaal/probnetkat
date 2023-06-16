@@ -9,18 +9,23 @@ module Syntax.Skel where
 import Prelude (($), Either(..), String, (++), Show, show)
 import qualified Syntax.Abs
 
-import Control.Arrow
-
-import Control.Monad.Bayes.Class
-
-import Semantics 
-
 type Err = Either String
-type Result m = Err (Kleisli m SH SH)
+type Result = Err String
 
-failure :: Show a => a -> Result m
+failure :: Show a => a -> Result
 failure x = Left $ "Undefined case: " ++ show x
 
-transIdent :: Syntax.Abs.Ident -> Result m
+transIdent :: Syntax.Abs.Ident -> Result
 transIdent x = case x of
   Syntax.Abs.Ident string -> failure x
+
+transExp :: Syntax.Abs.Exp -> Result
+transExp x = case x of
+  Syntax.Abs.EAss ident integer -> failure x
+  Syntax.Abs.ETest ident integer -> failure x
+  Syntax.Abs.EDup -> failure x
+  Syntax.Abs.ESkip -> failure x
+  Syntax.Abs.EDrop -> failure x
+  Syntax.Abs.ESeq exp1 exp2 -> failure x
+  Syntax.Abs.EProb exp1 double exp2 -> failure x
+  Syntax.Abs.Epar exp1 exp2 -> failure x
