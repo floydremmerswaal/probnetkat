@@ -19,6 +19,13 @@ import Transformation
 import Control.Monad.Bayes.Class
 import Control.Arrow
 
+import Control.Monad.Bayes.Enumerator
+
+import Control.Monad.Bayes.Sampler.Strict
+import Control.Monad.Bayes.Enumerator
+
+import Control.Monad (replicateM)
+
 import Syntax.ErrM
 
 type ParseFun a = [Token] -> Err a
@@ -108,6 +115,14 @@ testF fs = do
     Right tree -> do
       putStrLn "\nParse Successful!"
       print tree
-      let kleisliArrow = transExp tree :: MonadDistributionn m => Kleisli m SH SH
-      let sh = runKleisli kleisliArrow Set.empty
+      let kleisliArrow = transExp tree ::  Kleisli Enumerator SH SH
+      let sw = Field (Ident "sw") 1
+      let sh = Set.fromList [[[sw]]]
+      let empty = Set.empty
+      let result1 = runKleisli kleisliArrow sh
+      let result2 = runKleisli kleisliArrow empty
+      let samples1 = enumerator result1
+      let samples2 = enumerator result2
+      print samples1 -- this should output sw = 1 and pt = 1
+      print samples2 -- if adding fields if not present works, this should be the same
       putStrLn "Function is defined"

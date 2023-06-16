@@ -31,24 +31,36 @@ instance Show Field where
 ----------- Some helper functions
 
 -- assign value to a specific field in a packet
-assignField :: Packet -> Field -> Packet
-assignField [] _ = []
-assignField (x:xs) f = if name x == name f then f:xs else x:assignField xs f
+-- assignField :: Packet -> Field -> Packet
+-- assignField [] _ = []
+-- assignField (x:xs) f = if name x == name f then f:xs else x:assignField xs f
+
+-- assignField, but if the field is not present, add it
+assignField' :: Packet -> Field -> Packet
+assignField' [] f = [f]
+assignField' (x:xs) f = if name x == name f then f:xs else x:assignField' xs f
 
 -- assign value to the head package of a history
-assignHead :: History -> Field -> History
-assignHead [] _ = []
-assignHead (x:xs) field = assignField x field:xs
+-- assignHead :: History -> Field -> History
+-- assignHead [] _ = []
+-- assignHead (x:xs) field = assignField x field:xs
+
+-- assignHead but if the field is not present, add it
+assignHead' :: History -> Field -> History
+assignHead' [] f = [[f]]
+assignHead' (x:xs) f = assignField' x f:xs
 
 dupHead :: History -> History
 dupHead [] = []
 dupHead (x:xs) = [x,x] ++ xs
 
------------ Atomic operations
-
---- assign uses a Field at the moment, we might want to use string and int instead in the future
+-- assign but if the input is the empty set, apply assign to the empty set
 assign :: MonadDistribution m => Field -> KSH m
-assign f = arr $ Set.map (`assignHead` f)
+assign f = Kleisli $ \h -> if Set.null h then return $ Set.fromList [assignHead' [] f] else runKleisli (assign' f) h
+
+
+assign' :: MonadDistribution m => Field -> KSH m
+assign' f = arr $ Set.map (`assignHead'` f)
 
 test :: MonadDistribution m => Field -> KSH m
 test f = arr $ Set.filter (any (elem f) . listToMaybe)
