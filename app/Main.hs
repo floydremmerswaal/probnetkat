@@ -4,27 +4,19 @@ module Main (Main.main) where
 import Prelude hiding (drop, seq)
 
 import System.Environment ( getArgs )
-import System.Exit ( exitFailure, exitSuccess )
+import System.Exit ( exitFailure )
 import Control.Monad (when)
 import qualified Data.Set as Set
-import Data.Set (Set)
-
 import Syntax.Lex
 import Syntax.Par
 import Syntax.Print
-import Syntax.Abs
 import Semantics
 import Transformation
 
-import Control.Monad.Bayes.Class
+import Text.Printf
 import Control.Arrow
 
 import Control.Monad.Bayes.Enumerator
-
-import Control.Monad.Bayes.Sampler.Strict
-import Control.Monad.Bayes.Enumerator
-
-import Control.Monad (replicateM)
 
 import Syntax.ErrM
 
@@ -102,6 +94,12 @@ main = do
     "--test":fs  -> testF fs
     fs         -> mapM_ (runFileAndIO 2 pExp) fs
 
+prettyPrint :: [(SH, Double)] -> IO ()
+prettyPrint [] = return ()
+prettyPrint ((sh, d):xs) = do
+  putStrLn $ printf "%.2f" (d * 100) ++ "%" ++ " : " ++ show sh
+  prettyPrint xs
+
 testF :: [String] ->  IO ()
 testF fs = do
   putStrLn "test"
@@ -120,4 +118,4 @@ testF fs = do
       let result = runKleisli kleisliArrow Set.empty
       let samples = enumerator result
       putStrLn "Function output:"
-      print samples
+      prettyPrint samples
