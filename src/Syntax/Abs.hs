@@ -12,7 +12,8 @@ import qualified Data.String
 
 data Exp
     = EAss Ident Integer
-    | ETest Ident Integer
+    | ENeq Ident Integer
+    | EEq Ident Integer
     | EDup
     | ESkip
     | EDrop

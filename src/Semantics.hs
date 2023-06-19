@@ -1,4 +1,4 @@
-module Semantics (assign, test, dup, skip, drop, seq, prob, par, Field(..), Packet, History, SH, KSH) where
+module Semantics (assign, test, testneq, dup, skip, drop, seq, prob, par, Field(..), Packet, History, SH, KSH) where
 
 import Prelude hiding (id, (.), drop, seq)
 
@@ -61,6 +61,10 @@ assign f = Kleisli $ \h -> if Set.null h then return $ Set.fromList [assignHead'
 
 assign' :: MonadDistribution m => Field -> KSH m
 assign' f = arr $ Set.map (`assignHead'` f)
+
+-- negation of test
+testneq :: MonadDistribution m => Field -> KSH m
+testneq f = arr $ Set.filter (all (notElem f))
 
 test :: MonadDistribution m => Field -> KSH m
 test f = arr $ Set.filter (any (elem f) . listToMaybe)

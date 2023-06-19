@@ -143,7 +143,8 @@ instance Print Syntax.Abs.Ident where
 instance Print Syntax.Abs.Exp where
   prt i = \case
     Syntax.Abs.EAss id_ n -> prPrec i 3 (concatD [prt 0 id_, doc (showString "<-"), prt 0 n])
-    Syntax.Abs.ETest id_ n -> prPrec i 3 (concatD [prt 0 id_, doc (showString "="), prt 0 n])
+    Syntax.Abs.ENeq id_ n -> prPrec i 3 (concatD [prt 0 id_, doc (showString "!="), prt 0 n])
+    Syntax.Abs.EEq id_ n -> prPrec i 3 (concatD [prt 0 id_, doc (showString "="), prt 0 n])
     Syntax.Abs.EDup -> prPrec i 3 (concatD [doc (showString "dup")])
     Syntax.Abs.ESkip -> prPrec i 3 (concatD [doc (showString "skip")])
     Syntax.Abs.EDrop -> prPrec i 3 (concatD [doc (showString "drop")])

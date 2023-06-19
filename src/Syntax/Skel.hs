@@ -22,7 +22,8 @@ transIdent x = case x of
 transExp :: Syntax.Abs.Exp -> Result
 transExp x = case x of
   Syntax.Abs.EAss ident integer -> failure x
-  Syntax.Abs.ETest ident integer -> failure x
+  Syntax.Abs.ENeq ident integer -> failure x
+  Syntax.Abs.EEq ident integer -> failure x
   Syntax.Abs.EDup -> failure x
   Syntax.Abs.ESkip -> failure x
   Syntax.Abs.EDrop -> failure x
