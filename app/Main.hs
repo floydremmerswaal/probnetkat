@@ -8,6 +8,7 @@ import System.Exit ( exitFailure )
 import Control.Monad (when)
 import qualified Data.Set as Set
 import Syntax.Lex
+import Syntax.Abs
 import Syntax.Par
 import Syntax.Print
 import Semantics
@@ -113,9 +114,11 @@ testF fs = do
     Right tree -> do
       putStrLn "\nParse Successful!"
       print tree
+      let history = [[Field (Ident "pt") (-1), Field (Ident "sw") (-1)]] :: History
+      let initialSet = Set.fromList [history] :: SH
       let kleisliArrow = transExp tree ::  Kleisli Enumerator SH SH
       putStrLn "Function is defined"
-      let result = runKleisli kleisliArrow Set.empty
+      let result = runKleisli kleisliArrow initialSet
       let samples = enumerator result
       putStrLn "Function output:"
       prettyPrint samples
