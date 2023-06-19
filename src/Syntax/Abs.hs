@@ -18,6 +18,7 @@ data Exp
     | ESkip
     | EDrop
     | ESeq Exp Exp
+    | EprobD Exp Exp
     | EProb Exp Double Exp
     | Epar Exp Exp
   deriving (C.Eq, C.Ord, C.Show, C.Read)

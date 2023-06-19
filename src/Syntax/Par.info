@@ -19,10 +19,11 @@ Grammar
 	Exp3 -> '(' Exp ')'                                (10)
 	Exp2 -> Exp2 ';' Exp3                              (11)
 	Exp2 -> Exp3                                       (12)
-	Exp1 -> Exp1 '+[' Double ']' Exp2                  (13)
-	Exp1 -> Exp2                                       (14)
-	Exp -> Exp '&' Exp1                                (15)
-	Exp -> Exp1                                        (16)
+	Exp1 -> Exp1 '+' Exp2                              (13)
+	Exp1 -> Exp1 '+[' Double ']' Exp2                  (14)
+	Exp1 -> Exp2                                       (15)
+	Exp -> Exp '&' Exp1                                (16)
+	Exp -> Exp1                                        (17)
 
 -----------------------------------------------------------------------------
 Terminals
@@ -31,14 +32,15 @@ Terminals
 	'&'            { PT _ (TS _ 2) }
 	'('            { PT _ (TS _ 3) }
 	')'            { PT _ (TS _ 4) }
-	'+['           { PT _ (TS _ 5) }
-	';'            { PT _ (TS _ 6) }
-	'<-'           { PT _ (TS _ 7) }
-	'='            { PT _ (TS _ 8) }
-	']'            { PT _ (TS _ 9) }
-	'drop'         { PT _ (TS _ 10) }
-	'dup'          { PT _ (TS _ 11) }
-	'skip'         { PT _ (TS _ 12) }
+	'+'            { PT _ (TS _ 5) }
+	'+['           { PT _ (TS _ 6) }
+	';'            { PT _ (TS _ 7) }
+	'<-'           { PT _ (TS _ 8) }
+	'='            { PT _ (TS _ 9) }
+	']'            { PT _ (TS _ 10) }
+	'drop'         { PT _ (TS _ 11) }
+	'dup'          { PT _ (TS _ 12) }
+	'skip'         { PT _ (TS _ 13) }
 	L_Ident        { PT _ (TV $$) }
 	L_doubl        { PT _ (TD $$) }
 	L_integ        { PT _ (TI $$) }
@@ -52,8 +54,8 @@ Non-terminals
 	Integer         rule  3
 	Exp3            rules 4, 5, 6, 7, 8, 9, 10
 	Exp2            rules 11, 12
-	Exp1            rules 13, 14
-	Exp             rules 15, 16
+	Exp1            rules 13, 14, 15
+	Exp             rules 16, 17
 
 -----------------------------------------------------------------------------
 States
@@ -96,9 +98,9 @@ State 3
 	Exp3 -> Ident . '!=' Integer                        (rule 5)
 	Exp3 -> Ident . '=' Integer                         (rule 6)
 
-	'!='           shift, and enter state 16
-	'<-'           shift, and enter state 17
-	'='            shift, and enter state 18
+	'!='           shift, and enter state 17
+	'<-'           shift, and enter state 18
+	'='            shift, and enter state 19
 
 
 State 4
@@ -107,6 +109,7 @@ State 4
 
 	'&'            reduce using rule 12
 	')'            reduce using rule 12
+	'+'            reduce using rule 12
 	'+['           reduce using rule 12
 	';'            reduce using rule 12
 	%eof           reduce using rule 12
@@ -115,30 +118,33 @@ State 4
 State 5
 
 	Exp2 -> Exp2 . ';' Exp3                             (rule 11)
-	Exp1 -> Exp2 .                                      (rule 14)
+	Exp1 -> Exp2 .                                      (rule 15)
 
-	'&'            reduce using rule 14
-	')'            reduce using rule 14
-	'+['           reduce using rule 14
-	';'            shift, and enter state 15
-	%eof           reduce using rule 14
+	'&'            reduce using rule 15
+	')'            reduce using rule 15
+	'+'            reduce using rule 15
+	'+['           reduce using rule 15
+	';'            shift, and enter state 16
+	%eof           reduce using rule 15
 
 
 State 6
 
-	Exp1 -> Exp1 . '+[' Double ']' Exp2                 (rule 13)
-	Exp -> Exp1 .                                       (rule 16)
+	Exp1 -> Exp1 . '+' Exp2                             (rule 13)
+	Exp1 -> Exp1 . '+[' Double ']' Exp2                 (rule 14)
+	Exp -> Exp1 .                                       (rule 17)
 
-	'&'            reduce using rule 16
-	')'            reduce using rule 16
-	'+['           shift, and enter state 14
-	%eof           reduce using rule 16
+	'&'            reduce using rule 17
+	')'            reduce using rule 17
+	'+'            shift, and enter state 14
+	'+['           shift, and enter state 15
+	%eof           reduce using rule 17
 
 
 State 7
 
 	%start_pExp -> Exp .                                (rule 0)
-	Exp -> Exp . '&' Exp1                               (rule 15)
+	Exp -> Exp . '&' Exp1                               (rule 16)
 
 	'&'            shift, and enter state 13
 	%eof           accept
@@ -166,6 +172,7 @@ State 9
 
 	'&'            reduce using rule 9
 	')'            reduce using rule 9
+	'+'            reduce using rule 9
 	'+['           reduce using rule 9
 	';'            reduce using rule 9
 	%eof           reduce using rule 9
@@ -177,6 +184,7 @@ State 10
 
 	'&'            reduce using rule 7
 	')'            reduce using rule 7
+	'+'            reduce using rule 7
 	'+['           reduce using rule 7
 	';'            reduce using rule 7
 	%eof           reduce using rule 7
@@ -188,6 +196,7 @@ State 11
 
 	'&'            reduce using rule 8
 	')'            reduce using rule 8
+	'+'            reduce using rule 8
 	'+['           reduce using rule 8
 	';'            reduce using rule 8
 	%eof           reduce using rule 8
@@ -196,15 +205,15 @@ State 11
 State 12
 
 	Exp3 -> '(' Exp . ')'                               (rule 10)
-	Exp -> Exp . '&' Exp1                               (rule 15)
+	Exp -> Exp . '&' Exp1                               (rule 16)
 
 	'&'            shift, and enter state 13
-	')'            shift, and enter state 27
+	')'            shift, and enter state 29
 
 
 State 13
 
-	Exp -> Exp '&' . Exp1                               (rule 15)
+	Exp -> Exp '&' . Exp1                               (rule 16)
 
 	'('            shift, and enter state 8
 	'drop'         shift, and enter state 9
@@ -215,17 +224,31 @@ State 13
 	Ident          goto state 3
 	Exp3           goto state 4
 	Exp2           goto state 5
-	Exp1           goto state 26
+	Exp1           goto state 28
 
 State 14
 
-	Exp1 -> Exp1 '+[' . Double ']' Exp2                 (rule 13)
+	Exp1 -> Exp1 '+' . Exp2                             (rule 13)
 
-	L_doubl        shift, and enter state 25
+	'('            shift, and enter state 8
+	'drop'         shift, and enter state 9
+	'dup'          shift, and enter state 10
+	'skip'         shift, and enter state 11
+	L_Ident        shift, and enter state 2
 
-	Double         goto state 24
+	Ident          goto state 3
+	Exp3           goto state 4
+	Exp2           goto state 27
 
 State 15
+
+	Exp1 -> Exp1 '+[' . Double ']' Exp2                 (rule 14)
+
+	L_doubl        shift, and enter state 26
+
+	Double         goto state 25
+
+State 16
 
 	Exp2 -> Exp2 ';' . Exp3                             (rule 11)
 
@@ -236,126 +259,147 @@ State 15
 	L_Ident        shift, and enter state 2
 
 	Ident          goto state 3
-	Exp3           goto state 23
-
-State 16
-
-	Exp3 -> Ident '!=' . Integer                        (rule 5)
-
-	L_integ        shift, and enter state 20
-
-	Integer        goto state 22
+	Exp3           goto state 24
 
 State 17
 
-	Exp3 -> Ident '<-' . Integer                        (rule 4)
+	Exp3 -> Ident '!=' . Integer                        (rule 5)
 
-	L_integ        shift, and enter state 20
+	L_integ        shift, and enter state 21
 
-	Integer        goto state 21
+	Integer        goto state 23
 
 State 18
 
-	Exp3 -> Ident '=' . Integer                         (rule 6)
+	Exp3 -> Ident '<-' . Integer                        (rule 4)
 
-	L_integ        shift, and enter state 20
+	L_integ        shift, and enter state 21
 
-	Integer        goto state 19
+	Integer        goto state 22
 
 State 19
+
+	Exp3 -> Ident '=' . Integer                         (rule 6)
+
+	L_integ        shift, and enter state 21
+
+	Integer        goto state 20
+
+State 20
 
 	Exp3 -> Ident '=' Integer .                         (rule 6)
 
 	'&'            reduce using rule 6
 	')'            reduce using rule 6
+	'+'            reduce using rule 6
 	'+['           reduce using rule 6
 	';'            reduce using rule 6
 	%eof           reduce using rule 6
 
 
-State 20
+State 21
 
 	Integer -> L_integ .                                (rule 3)
 
 	'&'            reduce using rule 3
 	')'            reduce using rule 3
+	'+'            reduce using rule 3
 	'+['           reduce using rule 3
 	';'            reduce using rule 3
 	%eof           reduce using rule 3
 
 
-State 21
+State 22
 
 	Exp3 -> Ident '<-' Integer .                        (rule 4)
 
 	'&'            reduce using rule 4
 	')'            reduce using rule 4
+	'+'            reduce using rule 4
 	'+['           reduce using rule 4
 	';'            reduce using rule 4
 	%eof           reduce using rule 4
 
 
-State 22
+State 23
 
 	Exp3 -> Ident '!=' Integer .                        (rule 5)
 
 	'&'            reduce using rule 5
 	')'            reduce using rule 5
+	'+'            reduce using rule 5
 	'+['           reduce using rule 5
 	';'            reduce using rule 5
 	%eof           reduce using rule 5
 
 
-State 23
+State 24
 
 	Exp2 -> Exp2 ';' Exp3 .                             (rule 11)
 
 	'&'            reduce using rule 11
 	')'            reduce using rule 11
+	'+'            reduce using rule 11
 	'+['           reduce using rule 11
 	';'            reduce using rule 11
 	%eof           reduce using rule 11
 
 
-State 24
-
-	Exp1 -> Exp1 '+[' Double . ']' Exp2                 (rule 13)
-
-	']'            shift, and enter state 28
-
-
 State 25
+
+	Exp1 -> Exp1 '+[' Double . ']' Exp2                 (rule 14)
+
+	']'            shift, and enter state 30
+
+
+State 26
 
 	Double -> L_doubl .                                 (rule 2)
 
 	']'            reduce using rule 2
 
 
-State 26
-
-	Exp1 -> Exp1 . '+[' Double ']' Exp2                 (rule 13)
-	Exp -> Exp '&' Exp1 .                               (rule 15)
-
-	'&'            reduce using rule 15
-	')'            reduce using rule 15
-	'+['           shift, and enter state 14
-	%eof           reduce using rule 15
-
-
 State 27
+
+	Exp2 -> Exp2 . ';' Exp3                             (rule 11)
+	Exp1 -> Exp1 '+' Exp2 .                             (rule 13)
+
+	'&'            reduce using rule 13
+	')'            reduce using rule 13
+	'+'            reduce using rule 13
+	'+['           reduce using rule 13
+	';'            shift, and enter state 16
+	%eof           reduce using rule 13
+
+
+State 28
+
+	Exp1 -> Exp1 . '+' Exp2                             (rule 13)
+	Exp1 -> Exp1 . '+[' Double ']' Exp2                 (rule 14)
+	Exp -> Exp '&' Exp1 .                               (rule 16)
+
+	'&'            reduce using rule 16
+	')'            reduce using rule 16
+	'+'            shift, and enter state 14
+	'+['           shift, and enter state 15
+	%eof           reduce using rule 16
+
+
+State 29
 
 	Exp3 -> '(' Exp ')' .                               (rule 10)
 
 	'&'            reduce using rule 10
 	')'            reduce using rule 10
+	'+'            reduce using rule 10
 	'+['           reduce using rule 10
 	';'            reduce using rule 10
 	%eof           reduce using rule 10
 
 
-State 28
+State 30
 
-	Exp1 -> Exp1 '+[' Double ']' . Exp2                 (rule 13)
+	Exp1 -> Exp1 '+[' Double ']' . Exp2                 (rule 14)
 
 	'('            shift, and enter state 8
 	'drop'         shift, and enter state 9
@@ -365,24 +409,25 @@ State 28
 
 	Ident          goto state 3
 	Exp3           goto state 4
-	Exp2           goto state 29
+	Exp2           goto state 31
 
-State 29
+State 31
 
 	Exp2 -> Exp2 . ';' Exp3                             (rule 11)
-	Exp1 -> Exp1 '+[' Double ']' Exp2 .                 (rule 13)
+	Exp1 -> Exp1 '+[' Double ']' Exp2 .                 (rule 14)
 
-	'&'            reduce using rule 13
-	')'            reduce using rule 13
-	'+['           reduce using rule 13
-	';'            shift, and enter state 15
-	%eof           reduce using rule 13
+	'&'            reduce using rule 14
+	')'            reduce using rule 14
+	'+'            reduce using rule 14
+	'+['           reduce using rule 14
+	';'            shift, and enter state 16
+	%eof           reduce using rule 14
 
 
 -----------------------------------------------------------------------------
 Grammar Totals
 -----------------------------------------------------------------------------
-Number of rules: 17
-Number of terminals: 15
+Number of rules: 18
+Number of terminals: 16
 Number of non-terminals: 8
-Number of states: 30
+Number of states: 32

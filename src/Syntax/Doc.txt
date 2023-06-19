@@ -35,8 +35,8 @@ The reserved words used in Syntax are the following:
 
 The symbols used in Syntax are the following:
   | <- | != | = | ;
-  | +[ | ] | & | (
-  | ) |  |  |
+  | + | +[ | ] | &
+  | ( | ) |  |
 
 ===Comments===
 Single-line comments begin with //.Multiple-line comments are  enclosed with /* and */.
@@ -56,7 +56,8 @@ All other symbols are terminals.
   |  |  **|**  | ``(`` //Exp// ``)``
   | //Exp2// | -> | //Exp2// ``;`` //Exp3//
   |  |  **|**  | //Exp3//
-  | //Exp1// | -> | //Exp1// ``+[`` //Double// ``]`` //Exp2//
+  | //Exp1// | -> | //Exp1// ``+`` //Exp2//
+  |  |  **|**  | //Exp1// ``+[`` //Double// ``]`` //Exp2//
   |  |  **|**  | //Exp2//
   | //Exp// | -> | //Exp// ``&`` //Exp1//
   |  |  **|**  | //Exp1//

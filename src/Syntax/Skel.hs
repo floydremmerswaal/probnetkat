@@ -28,5 +28,6 @@ transExp x = case x of
   Syntax.Abs.ESkip -> failure x
   Syntax.Abs.EDrop -> failure x
   Syntax.Abs.ESeq exp1 exp2 -> failure x
+  Syntax.Abs.EprobD exp1 exp2 -> failure x
   Syntax.Abs.EProb exp1 double exp2 -> failure x
   Syntax.Abs.Epar exp1 exp2 -> failure x

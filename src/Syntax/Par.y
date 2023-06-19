@@ -27,14 +27,15 @@ import Syntax.Lex
   '&'      { PT _ (TS _ 2)  }
   '('      { PT _ (TS _ 3)  }
   ')'      { PT _ (TS _ 4)  }
-  '+['     { PT _ (TS _ 5)  }
-  ';'      { PT _ (TS _ 6)  }
-  '<-'     { PT _ (TS _ 7)  }
-  '='      { PT _ (TS _ 8)  }
-  ']'      { PT _ (TS _ 9)  }
-  'drop'   { PT _ (TS _ 10) }
-  'dup'    { PT _ (TS _ 11) }
-  'skip'   { PT _ (TS _ 12) }
+  '+'      { PT _ (TS _ 5)  }
+  '+['     { PT _ (TS _ 6)  }
+  ';'      { PT _ (TS _ 7)  }
+  '<-'     { PT _ (TS _ 8)  }
+  '='      { PT _ (TS _ 9)  }
+  ']'      { PT _ (TS _ 10) }
+  'drop'   { PT _ (TS _ 11) }
+  'dup'    { PT _ (TS _ 12) }
+  'skip'   { PT _ (TS _ 13) }
   L_Ident  { PT _ (TV $$)   }
   L_doubl  { PT _ (TD $$)   }
   L_integ  { PT _ (TI $$)   }
@@ -65,7 +66,8 @@ Exp2 : Exp2 ';' Exp3 { Syntax.Abs.ESeq $1 $3 } | Exp3 { $1 }
 
 Exp1 :: { Syntax.Abs.Exp }
 Exp1
-  : Exp1 '+[' Double ']' Exp2 { Syntax.Abs.EProb $1 $3 $5 }
+  : Exp1 '+' Exp2 { Syntax.Abs.EprobD $1 $3 }
+  | Exp1 '+[' Double ']' Exp2 { Syntax.Abs.EProb $1 $3 $5 }
   | Exp2 { $1 }
 
 Exp :: { Syntax.Abs.Exp }
