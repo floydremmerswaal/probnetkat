@@ -87,7 +87,7 @@ skip :: MonadDistribution m => KSH m
 skip = id
 
 drop :: MonadDistribution m => KSH m
-drop = arr $ const Set.empty
+drop = arr $ const (Set.singleton [])
 
 
 ----------- Other operators
