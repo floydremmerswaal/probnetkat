@@ -27,15 +27,16 @@ import Syntax.Lex
   '&'      { PT _ (TS _ 2)  }
   '('      { PT _ (TS _ 3)  }
   ')'      { PT _ (TS _ 4)  }
-  '+'      { PT _ (TS _ 5)  }
-  '+['     { PT _ (TS _ 6)  }
-  ';'      { PT _ (TS _ 7)  }
-  '<-'     { PT _ (TS _ 8)  }
-  '='      { PT _ (TS _ 9)  }
-  ']'      { PT _ (TS _ 10) }
-  'drop'   { PT _ (TS _ 11) }
-  'dup'    { PT _ (TS _ 12) }
-  'skip'   { PT _ (TS _ 13) }
+  '*'      { PT _ (TS _ 5)  }
+  '+'      { PT _ (TS _ 6)  }
+  '+['     { PT _ (TS _ 7)  }
+  ';'      { PT _ (TS _ 8)  }
+  '<-'     { PT _ (TS _ 9)  }
+  '='      { PT _ (TS _ 10) }
+  ']'      { PT _ (TS _ 11) }
+  'drop'   { PT _ (TS _ 12) }
+  'dup'    { PT _ (TS _ 13) }
+  'skip'   { PT _ (TS _ 14) }
   L_Ident  { PT _ (TV $$)   }
   L_doubl  { PT _ (TD $$)   }
   L_integ  { PT _ (TI $$)   }
@@ -71,7 +72,10 @@ Exp1
   | Exp2 { $1 }
 
 Exp :: { Syntax.Abs.Exp }
-Exp : Exp '&' Exp1 { Syntax.Abs.Epar $1 $3 } | Exp1 { $1 }
+Exp
+  : Exp '&' Exp1 { Syntax.Abs.Epar $1 $3 }
+  | Exp '*' { Syntax.Abs.EKleene $1 }
+  | Exp1 { $1 }
 
 {
 

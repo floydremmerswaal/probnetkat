@@ -152,3 +152,4 @@ instance Print Syntax.Abs.Exp where
     Syntax.Abs.EprobD exp1 exp2 -> prPrec i 1 (concatD [prt 1 exp1, doc (showString "+"), prt 2 exp2])
     Syntax.Abs.EProb exp1 d exp2 -> prPrec i 1 (concatD [prt 1 exp1, doc (showString "+["), prt 0 d, doc (showString "]"), prt 2 exp2])
     Syntax.Abs.Epar exp1 exp2 -> prPrec i 0 (concatD [prt 0 exp1, doc (showString "&"), prt 1 exp2])
+    Syntax.Abs.EKleene exp -> prPrec i 0 (concatD [prt 0 exp, doc (showString "*")])

@@ -34,7 +34,6 @@ library
       Syntax.Par
       Syntax.Print
       Syntax.Skel
-      Syntax.Test
       Transformation
   other-modules:
       Paths_probnetkat

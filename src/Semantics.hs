@@ -1,4 +1,4 @@
-module Semantics (assign, test, testneq, dup, skip, drop, seq, prob, par, Field(..), Packet, History, SH, KSH) where
+module Semantics (assign, test, testneq, dup, skip, drop, seq, prob, par, kleene, Field(..), Packet, History, SH, KSH) where
 
 import Prelude hiding (id, (.), drop, seq)
 
@@ -89,6 +89,15 @@ skip = id
 drop :: MonadDistribution m => KSH m
 drop = arr $ const (Set.singleton [])
 
+
+-- approximate Kleene star by a finite number of iterations, lets say 1000 for the moment
+-- the paper specifies approximating by doing (skip & p)^n
+kleeneApprox :: MonadDistribution m => Integer -> KSH m -> KSH m
+kleeneApprox 0 _ = skip
+kleeneApprox n p = seq (par skip p) (kleeneApprox (n-1) p)
+
+kleene :: MonadDistribution m => KSH m -> KSH m
+kleene = kleeneApprox 2
 
 ----------- Other operators
 

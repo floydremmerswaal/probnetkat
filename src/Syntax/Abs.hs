@@ -21,6 +21,7 @@ data Exp
     | EprobD Exp Exp
     | EProb Exp Double Exp
     | Epar Exp Exp
+    | EKleene Exp
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 newtype Ident = Ident String

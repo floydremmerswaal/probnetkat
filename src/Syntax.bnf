@@ -12,6 +12,8 @@ EprobD. Exp1 ::= Exp1 "+" Exp2;
 EProb. Exp1 ::= Exp1 "+[" Double "]" Exp2;
 Epar. Exp ::= Exp "&" Exp1;
 
+EKleene. Exp ::= Exp "*";
+
 coercions Exp 3;
 
 comment "//" ;

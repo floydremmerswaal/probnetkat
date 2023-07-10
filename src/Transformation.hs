@@ -33,3 +33,4 @@ transExp x = case x of
   Syntax.Abs.EprobD exp1 exp2 -> prob 0.5 (transExp exp1) (transExp exp2)
   Syntax.Abs.EProb exp1 double exp2 -> prob double (transExp exp1)  (transExp exp2)
   Syntax.Abs.Epar exp1 exp2 -> par (transExp exp1) (transExp exp2)
+  Syntax.Abs.EKleene exp1 -> kleene (transExp exp1)
