@@ -25,14 +25,28 @@
 
 #include <iostream>
 
+#define RMIN 1
+#define RMAX 10
+
 using namespace ns3;
 
-int
-main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     Config::SetDefault("ns3::OnOffApplication::PacketSize", UintegerValue(512));
     Config::SetDefault("ns3::OnOffApplication::DataRate", StringValue("500kb/s"));
 
+    RngSeedManager::SetSeed(3); // Changes seed from default of 1 to 3
+    RngSeedManager::SetRun(7);  // Changes run number from default of 1 to 7
+
+    Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable>();
+    x->SetAttribute("Min", DoubleValue(RMIN));
+    x->SetAttribute("Max", DoubleValue(RMAX));
+    int myRandomNo = 0;
+    for (int i = 0; i < 10; ++i)
+    {
+        myRandomNo = x->GetInteger();
+        std::cout << "Random Number: " << myRandomNo << std::endl;
+    }
     uint32_t nLeftLeaf = 2;
     uint32_t nRightLeaf = 2;
     uint32_t nLeaf = 0;                         // If non-zero, number of both left and right
