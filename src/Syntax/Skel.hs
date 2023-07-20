@@ -15,15 +15,14 @@ type Result = Err String
 failure :: Show a => a -> Result
 failure x = Left $ "Undefined case: " ++ show x
 
-transIdent :: Syntax.Abs.Ident -> Result
-transIdent x = case x of
-  Syntax.Abs.Ident string -> failure x
-
 transExp :: Syntax.Abs.Exp -> Result
 transExp x = case x of
-  Syntax.Abs.EAss ident integer -> failure x
-  Syntax.Abs.ENeq ident integer -> failure x
-  Syntax.Abs.EEq ident integer -> failure x
+  Syntax.Abs.EAssSw integer -> failure x
+  Syntax.Abs.EAssPt integer -> failure x
+  Syntax.Abs.ESwEq integer -> failure x
+  Syntax.Abs.EPtEq integer -> failure x
+  Syntax.Abs.ESwNEq integer -> failure x
+  Syntax.Abs.EPtNEq integer -> failure x
   Syntax.Abs.EDup -> failure x
   Syntax.Abs.ESkip -> failure x
   Syntax.Abs.EDrop -> failure x

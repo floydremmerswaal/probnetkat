@@ -23,9 +23,12 @@ import Semantics
 
 transExp :: MonadDistribution m => Syntax.Abs.Exp -> Kleisli m SH SH
 transExp x = case x of
-  Syntax.Abs.EAss ident integer -> assign (Field ident integer)
-  Syntax.Abs.ENeq ident integer -> testneq (Field ident integer)
-  Syntax.Abs.EEq ident integer -> test (Field ident integer)
+  Syntax.Abs.EAssSw integer -> assignSw integer
+  Syntax.Abs.EAssPt integer -> assignPt integer
+  Syntax.Abs.ESwEq integer -> testSw integer
+  Syntax.Abs.EPtEq integer -> testPt integer
+  Syntax.Abs.ESwNEq integer -> testNegSw integer
+  Syntax.Abs.EPtNEq integer -> testNegPt integer
   Syntax.Abs.EDup -> dup
   Syntax.Abs.ESkip -> skip
   Syntax.Abs.EDrop -> drop

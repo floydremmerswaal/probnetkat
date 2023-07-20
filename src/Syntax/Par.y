@@ -36,15 +36,13 @@ import Syntax.Lex
   ']'      { PT _ (TS _ 11) }
   'drop'   { PT _ (TS _ 12) }
   'dup'    { PT _ (TS _ 13) }
-  'skip'   { PT _ (TS _ 14) }
-  L_Ident  { PT _ (TV $$)   }
+  'pt'     { PT _ (TS _ 14) }
+  'skip'   { PT _ (TS _ 15) }
+  'sw'     { PT _ (TS _ 16) }
   L_doubl  { PT _ (TD $$)   }
   L_integ  { PT _ (TI $$)   }
 
 %%
-
-Ident :: { Syntax.Abs.Ident }
-Ident  : L_Ident { Syntax.Abs.Ident $1 }
 
 Double  :: { Double }
 Double   : L_doubl  { (read $1) :: Double }
@@ -54,9 +52,12 @@ Integer  : L_integ  { (read $1) :: Integer }
 
 Exp3 :: { Syntax.Abs.Exp }
 Exp3
-  : Ident '<-' Integer { Syntax.Abs.EAss $1 $3 }
-  | Ident '!=' Integer { Syntax.Abs.ENeq $1 $3 }
-  | Ident '=' Integer { Syntax.Abs.EEq $1 $3 }
+  : 'sw' '<-' Integer { Syntax.Abs.EAssSw $3 }
+  | 'pt' '<-' Integer { Syntax.Abs.EAssPt $3 }
+  | 'sw' '=' Integer { Syntax.Abs.ESwEq $3 }
+  | 'pt' '=' Integer { Syntax.Abs.EPtEq $3 }
+  | 'sw' '!=' Integer { Syntax.Abs.ESwNEq $3 }
+  | 'pt' '!=' Integer { Syntax.Abs.EPtNEq $3 }
   | 'dup' { Syntax.Abs.EDup }
   | 'skip' { Syntax.Abs.ESkip }
   | 'drop' { Syntax.Abs.EDrop }

@@ -1,4 +1,4 @@
-module Semantics (assign, test, testneq, dup, skip, drop, seq, prob, par, kleene, Field(..), Packet, History, SH, KSH) where
+module Semantics (assignSw, assignPt, testSw, testPt, testNegPt, testNegSw, dup, skip, drop, seq, prob, par, kleene, Packet, History, SH, KSH) where
 
 import Prelude hiding (id, (.), drop, seq)
 
@@ -10,71 +10,67 @@ import Control.Applicative (liftA2)
 import qualified Data.Set as Set
 import Data.Set (Set)
 
-import Data.Maybe (listToMaybe)
+-- import Data.Maybe (listToMaybe)
 
-import Syntax.Abs (Ident(..))
+-- import Syntax.Abs (Ident(..))
 
 -- Type definitions
-data Field = Field { name :: Ident, value :: Integer } deriving (Eq, Ord)
-type Packet = [Field]
+data Packet = Packet { sw :: Integer, pt :: Integer } deriving (Eq, Ord)
 type History = [Packet]
 
 type SH = Set History
 
 type KSH m = Kleisli m SH SH
 
--- define show, not really good haskell but makes it a bit more readable at the moment
-instance Show Field where
-  show (Field n v) = "{" ++ show n ++ ":" ++ show v ++ "}"
-
-
 ----------- Some helper functions
-
--- assign value to a specific field in a packet
-assignField :: Packet -> Field -> Packet
-assignField [] _ = []
-assignField (x:xs) f = if name x == name f then f:xs else x:assignField xs f
-
--- assignField, but if the field is not present, add it
-assignField' :: Packet -> Field -> Packet
-assignField' [] f = [f]
-assignField' (x:xs) f = if name x == name f then f:xs else x:assignField' xs f
-
--- assign value to the head package of a history
-assignHead :: History -> Field -> History
-assignHead [] _ = []
-assignHead (x:xs) field = assignField x field:xs
-
--- assignHead but if the field is not present, add it
-assignHead' :: History -> Field -> History
-assignHead' [] f = [[f]]
-assignHead' (x:xs) f = assignField' x f:xs
 
 dupHead :: History -> History
 dupHead [] = []
 dupHead (x:xs) = [x,x] ++ xs
 
--- assign but if the input is the empty set, apply assign to the empty set
--- assign :: MonadDistribution m => Field -> KSH m
--- assign f = Kleisli $ \h -> if Set.null h then return $ Set.fromList [assignHead' [] f] else runKleisli (assign' f) h
+changeSw :: Integer -> History -> History
+changeSw _ [] = []
+changeSw i (x:xs) = (x { sw = i }) : xs
 
+changePt :: Integer -> History -> History
+changePt _ [] = []
+changePt i (x:xs) = (x { pt = i }) : xs
 
-assign :: MonadDistribution m => Field -> KSH m
-assign f = arr $ Set.map (`assignHead'` f)
+assignSw :: MonadDistribution m => Integer -> KSH m
+assignSw s = arr $ Set.map (changeSw s)
 
--- negation of test
-testneq' :: MonadDistribution m => Field -> KSH m
-testneq' f = arr $ Set.filter (all (notElem f))
+assignPt :: MonadDistribution m => Integer -> KSH m
+assignPt t = arr $ Set.map (changePt t)
 
-testneq :: MonadDistribution m => Field -> KSH m
-testneq f = testneq' f >>> fixEmpty
+testSwPacket :: Bool -> Integer -> History -> Bool
+testSwPacket True s (x:_) = sw x == s 
+testSwPacket False s (x:_) = sw x /= s
+testSwPacket _ _ [] = False
 
--- filter out all histories that do not contain the given field (with value)
-test'  :: MonadDistribution m => Field -> KSH m
-test' f = arr $ Set.filter (any (elem f) . listToMaybe)
+testPtPacket :: Bool -> Integer -> History -> Bool
+testPtPacket True p (x:_) = pt x == p
+testPtPacket False p (x:_) = pt x /= p
+testPtPacket _ _ [] = False
 
-test :: MonadDistribution m => Field -> Kleisli m SH SH
-test f = test' f >>> fixEmpty
+testSw' :: MonadDistribution m => Bool -> Integer -> KSH m
+testSw' b s = arr $ Set.filter (testSwPacket b s)
+
+testPt' :: MonadDistribution m => Bool -> Integer -> KSH m
+testPt' b t = arr $ Set.filter (testPtPacket b t)
+
+-- tests
+
+testSw :: MonadDistribution m => Integer -> Kleisli m SH SH
+testSw v = fixEmpty >>> testSw' True v
+
+testPt :: MonadDistribution m => Integer -> Kleisli m SH SH
+testPt v = fixEmpty >>> testPt' True v
+
+testNegSw :: MonadDistribution m => Integer -> Kleisli m SH SH
+testNegSw v = fixEmpty >>> testSw' False v
+
+testNegPt :: MonadDistribution m => Integer -> Kleisli m SH SH
+testNegPt v = fixEmpty >>> testSw' False v
 
 -- map the empty set to the set containing an empty history, otherwise return the set itself
 fixEmpty :: MonadDistribution m => KSH m
@@ -90,14 +86,14 @@ drop :: MonadDistribution m => KSH m
 drop = arr $ const (Set.singleton [])
 
 
--- approximate Kleene star by a finite number of iterations, lets say 1000 for the moment
+-- approximate Kleene star by a finite number of iterations, lets say 10 for the moment
 -- the paper specifies approximating by doing (skip & p)^n
 kleeneApprox :: MonadDistribution m => Integer -> KSH m -> KSH m
 kleeneApprox 0 _ = skip
 kleeneApprox n p = seq (par skip p) (kleeneApprox (n-1) p)
 
 kleene :: MonadDistribution m => KSH m -> KSH m
-kleene = kleeneApprox 2
+kleene = kleeneApprox 10
 
 ----------- Other operators
 
