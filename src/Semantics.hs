@@ -15,8 +15,7 @@ import Data.Set (Set)
 -- import Syntax.Abs (Ident(..))
 
 -- Type definitions
--- data Packet = Packet { sw :: Integer, pt :: Integer } deriving (Show, Eq, Ord)
-data Packet = Packet { sw :: Integer, pt :: Integer } deriving (Show, Eq, Ord)
+type Packet = (Integer, Integer) -- sw is the first element, pt is the second
 type History = [Packet]
 
 type SH = Set History
@@ -28,13 +27,19 @@ dupHead :: History -> History
 dupHead [] = []
 dupHead (x:xs) = [x,x] ++ xs
 
+changeSw' :: Integer -> Packet -> Packet
+changeSw' i (_,y) = (i,y)
+
 changeSw :: Integer -> History -> History
 changeSw _ [] = []
-changeSw i (x:xs) = (x { sw = i }) : xs
+changeSw i (x:xs) = changeSw' i x : xs
+
+changePt' :: Integer -> Packet -> Packet
+changePt' i (x,_) = (x,i)
 
 changePt :: Integer -> History -> History
 changePt _ [] = []
-changePt i (x:xs) = (x { pt = i }) : xs
+changePt i (x:xs) = changePt' i x : xs
 
 assignSw :: MonadDistribution m => Integer -> KSH m
 assignSw s = arr $ Set.map (changeSw s)
@@ -43,13 +48,13 @@ assignPt :: MonadDistribution m => Integer -> KSH m
 assignPt t = arr $ Set.map (changePt t)
 
 testSwPacket :: Bool -> Integer -> History -> Bool
-testSwPacket True s (x:_) = sw x == s 
-testSwPacket False s (x:_) = sw x /= s
+testSwPacket True s (x:_) = fst x == s 
+testSwPacket False s (x:_) = fst x /= s
 testSwPacket _ _ [] = False
 
 testPtPacket :: Bool -> Integer -> History -> Bool
-testPtPacket True p (x:_) = pt x == p
-testPtPacket False p (x:_) = pt x /= p
+testPtPacket True p (x:_) = snd x == p
+testPtPacket False p (x:_) = snd x /= p
 testPtPacket _ _ [] = False
 
 testSw' :: MonadDistribution m => Bool -> Integer -> KSH m
