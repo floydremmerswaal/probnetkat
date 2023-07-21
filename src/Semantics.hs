@@ -4,7 +4,7 @@ import Prelude hiding (id, (.), drop, seq)
 
 import Control.Monad.Bayes.Class ( MonadDistribution(bernoulli) )
 import Control.Arrow
-import Control.Category
+import Control.Category ( Category(id) )
 import Control.Applicative (liftA2)
 
 import qualified Data.Set as Set
@@ -15,13 +15,13 @@ import Data.Set (Set)
 -- import Syntax.Abs (Ident(..))
 
 -- Type definitions
-data Packet = Packet { sw :: Integer, pt :: Integer } deriving (Eq, Ord)
+-- data Packet = Packet { sw :: Integer, pt :: Integer } deriving (Show, Eq, Ord)
+data Packet = Packet { sw :: Integer, pt :: Integer } deriving (Show, Eq, Ord)
 type History = [Packet]
 
 type SH = Set History
 
 type KSH m = Kleisli m SH SH
-
 ----------- Some helper functions
 
 dupHead :: History -> History

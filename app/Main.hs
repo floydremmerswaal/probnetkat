@@ -105,6 +105,7 @@ testF :: [String] ->  IO ()
 testF fs = do
   putStrLn "test"
   s <- readFile (head fs)
+  let pkt = Packet :: Packet
   let ts = myLexer s
   case pExp ts of
     Left err -> do
@@ -114,8 +115,7 @@ testF fs = do
     Right tree -> do
       putStrLn "\nParse Successful!"
       print tree
-      -- let history = [[Field (Ident "pt") (-1), Field (Ident "sw") (-1)]] :: History
-      let history = [Packet 0 0] :: History
+      let history = [] :: History
       let initialSet = Set.fromList [history] :: SH
       let kleisliArrow = transExp tree ::  Kleisli Enumerator SH SH
       putStrLn "Function is defined"
