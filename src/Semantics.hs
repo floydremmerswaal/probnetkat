@@ -1,4 +1,4 @@
-module Semantics (assignSw, assignPt, testSw, testPt, testNegPt, testNegSw, dup, skip, drop, seq, prob, par, kleene, Packet, History, SH, KSH) where
+module Semantics (assignSw, assignPt, testSw, testPt, testNegPt, testNegSw, dup, skip, drop, seq, prob, par, kleene, Packet, History, SH, KSH, pt, sw) where
 
 import Prelude hiding (id, (.), drop, seq)
 
@@ -22,6 +22,12 @@ type SH = Set History
 
 type KSH m = Kleisli m SH SH
 ----------- Some helper functions
+
+pt :: Packet -> Integer
+pt (_,y) = y
+
+sw :: Packet -> Integer
+sw (x,_) = x
 
 dupHead :: History -> History
 dupHead [] = []
@@ -48,13 +54,13 @@ assignPt :: MonadDistribution m => Integer -> KSH m
 assignPt t = arr $ Set.map (changePt t)
 
 testSwPacket :: Bool -> Integer -> History -> Bool
-testSwPacket True s (x:_) = fst x == s 
-testSwPacket False s (x:_) = fst x /= s
+testSwPacket True s (x:_) = sw x == s 
+testSwPacket False s (x:_) = sw x /= s
 testSwPacket _ _ [] = False
 
 testPtPacket :: Bool -> Integer -> History -> Bool
-testPtPacket True p (x:_) = snd x == p
-testPtPacket False p (x:_) = snd x /= p
+testPtPacket True p (x:_) = pt x == p
+testPtPacket False p (x:_) = pt x /= p
 testPtPacket _ _ [] = False
 
 testSw' :: MonadDistribution m => Bool -> Integer -> KSH m

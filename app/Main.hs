@@ -38,17 +38,17 @@ runFileAndIO v p f = do
   --interactiveSession
 
 
-interactiveSession :: IO ()
-interactiveSession = do 
-  putStr ""
-  line <- getLine
-  if line == "quit" 
-    then putStrLn "Bye"
-    else do
-      case line of 
-          "" -> putStrLn "success!"
-          _      -> putStrLn "unknown command"
-      interactiveSession 
+-- interactiveSession :: IO ()
+-- interactiveSession = do 
+--   putStr ""
+--   line <- getLine
+--   if line == "quit" 
+--     then putStrLn "Bye"
+--     else do
+--       case line of 
+--           "" -> putStrLn "success!"
+--           _      -> putStrLn "unknown command"
+--       interactiveSession 
 
 runFile :: (Print a, Show a) => Verbosity -> ParseFun a -> FilePath -> IO ()
 runFile v p f = putStrLn f >> readFile f >>= run v p
