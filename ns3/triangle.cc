@@ -19,6 +19,8 @@
 #include "ns3/network-module.h"
 #include "ns3/point-to-point-module.h"
 
+#include "pnkhelper.h"
+
 // Default Network Topology
 //
 //       10.1.1.0
@@ -60,13 +62,13 @@ main(int argc, char* argv[])
 
     Ipv4InterfaceContainer interfaces = address.Assign(devices);
 
-    UdpEchoServerHelper echoServer(9);
+    PnkServerHelper echoServer(9);
 
     ApplicationContainer serverApps = echoServer.Install(nodes.Get(2));
     serverApps.Start(Seconds(1.0));
     serverApps.Stop(Seconds(10.0));
 
-    UdpEchoClientHelper echoClient(interfaces.GetAddress(1), 9);
+    PnkClientHelper echoClient(interfaces.GetAddress(1), 9);
     echoClient.SetAttribute("MaxPackets", UintegerValue(1));
     echoClient.SetAttribute("Interval", TimeValue(Seconds(1.0)));
     echoClient.SetAttribute("PacketSize", UintegerValue(1024));
@@ -79,7 +81,9 @@ main(int argc, char* argv[])
          ++i)
     {
         // Create an on/off app sending packets to the same leaf right side
-        AddressValue remoteAddress(InetSocketAddress(interfaces.GetAddress(0), 1337));
+        AddressValue remoteAddress(InetSocketAddress(interfaces.GetAddress((i + 1) % 3), i));
+        echoClient.SetAttribute("RemoteAddress", remoteAddress);
+        echoClient.SetAttribute("RemotePort", UintegerValue(1337));
         clientApps.Add(echoClient.Install(nodes.Get(i)));
     }
 
