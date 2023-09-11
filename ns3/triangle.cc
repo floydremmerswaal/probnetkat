@@ -18,10 +18,12 @@
 #include "ns3/internet-module.h"
 #include "ns3/network-module.h"
 #include "ns3/point-to-point-module.h"
+#include "ns3/netanim-module.h"
+#include "ns3/mobility-helper.h"
 
 #include "pnkhelper.h"
 
-// Default Network Topology
+// Triangle Network Topology
 //
 //       10.1.1.0
 // n0 -------------- n1
@@ -39,11 +41,15 @@ main(int argc, char* argv[])
     cmd.Parse(argc, argv);
 
     Time::SetResolution(Time::NS);
-    LogComponentEnable("UdpEchoClientApplication", LOG_LEVEL_INFO);
-    LogComponentEnable("UdpEchoServerApplication", LOG_LEVEL_INFO);
+    LogComponentEnable("PnkClientApplication", LOG_LEVEL_INFO);
+    LogComponentEnable("PnkServerApplication", LOG_LEVEL_INFO);
 
     NodeContainer nodes;
     nodes.Create(3);
+
+    // MobilityHelper mobility;
+    // mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+    // mobility.Install(nodes);
 
     PointToPointHelper pointToPoint;
     pointToPoint.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
@@ -51,8 +57,11 @@ main(int argc, char* argv[])
 
     NetDeviceContainer devices;
     devices = pointToPoint.Install(nodes.Get(0), nodes.Get(1));
+    devices.Add(pointToPoint.Install(nodes.Get(0), nodes.Get(2)));
     devices.Add(pointToPoint.Install(nodes.Get(1), nodes.Get(2)));
 
+    // some animation stuf
+    std::string animFile = "pnk-animation.xml"; // Name of file for animation output
 
     InternetStackHelper stack;
     stack.Install(nodes);
@@ -81,14 +90,20 @@ main(int argc, char* argv[])
          ++i)
     {
         // Create an on/off app sending packets to the same leaf right side
-        AddressValue remoteAddress(InetSocketAddress(interfaces.GetAddress((i + 1) % 3), i));
+        AddressValue remoteAddress(InetSocketAddress(interfaces.GetAddress((i + 1) % 3), 100+i));
         echoClient.SetAttribute("RemoteAddress", remoteAddress);
-        echoClient.SetAttribute("RemotePort", UintegerValue(1337));
         clientApps.Add(echoClient.Install(nodes.Get(i)));
     }
 
+    // Create the animation object and configure for specified output
+    AnimationInterface anim(animFile);
+    anim.EnablePacketMetadata();                                // Optional
+    anim.EnableIpv4L3ProtocolCounters(Seconds(0), Seconds(10)); // Optional
+
+    // Set up the actual simulation
+    Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
     Simulator::Run();
+    std::cout << "Animation Trace file created:" << animFile << std::endl;
     Simulator::Destroy();
-    return 0;
 }

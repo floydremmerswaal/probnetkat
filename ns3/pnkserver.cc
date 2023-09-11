@@ -88,7 +88,7 @@ PnkServer::StartApplication()
 
     if (!m_socket)
     {
-        TypeId tid = TypeId::LookupByName("ns3::PnkSocketFactory");
+        TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
         m_socket = Socket::CreateSocket(GetNode(), tid);
         InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), m_port);
         if (m_socket->Bind(local) == -1)

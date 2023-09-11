@@ -23,12 +23,15 @@
 #include "ns3/udp-echo-server.h"
 #include "ns3/uinteger.h"
 
+#include "pnkclient.h"
+#include "pnkserver.h"
+
 namespace ns3
 {
 
 PnkServerHelper::PnkServerHelper(uint16_t port)
 {
-    m_factory.SetTypeId(UdpEchoServer::GetTypeId());
+    m_factory.SetTypeId(PnkServer::GetTypeId());
     SetAttribute("Port", UintegerValue(port));
 }
 
@@ -66,7 +69,7 @@ PnkServerHelper::Install(NodeContainer c) const
 Ptr<Application>
 PnkServerHelper::InstallPriv(Ptr<Node> node) const
 {
-    Ptr<Application> app = m_factory.Create<UdpEchoServer>();
+    Ptr<Application> app = m_factory.Create<PnkServer>();
     node->AddApplication(app);
 
     return app;
@@ -74,14 +77,14 @@ PnkServerHelper::InstallPriv(Ptr<Node> node) const
 
 PnkClientHelper::PnkClientHelper(Address address, uint16_t port)
 {
-    m_factory.SetTypeId(UdpEchoClient::GetTypeId());
+    m_factory.SetTypeId(PnkClient::GetTypeId());
     SetAttribute("RemoteAddress", AddressValue(address));
     SetAttribute("RemotePort", UintegerValue(port));
 }
 
 PnkClientHelper::PnkClientHelper(Address address)
 {
-    m_factory.SetTypeId(UdpEchoClient::GetTypeId());
+    m_factory.SetTypeId(PnkClient::GetTypeId());
     SetAttribute("RemoteAddress", AddressValue(address));
 }
 
@@ -94,13 +97,13 @@ PnkClientHelper::SetAttribute(std::string name, const AttributeValue& value)
 void
 PnkClientHelper::SetFill(Ptr<Application> app, std::string fill)
 {
-    app->GetObject<UdpEchoClient>()->SetFill(fill);
+    app->GetObject<PnkClient>()->SetFill(fill);
 }
 
 void
 PnkClientHelper::SetFill(Ptr<Application> app, uint8_t fill, uint32_t dataLength)
 {
-    app->GetObject<UdpEchoClient>()->SetFill(fill, dataLength);
+    app->GetObject<PnkClient>()->SetFill(fill, dataLength);
 }
 
 void
@@ -109,7 +112,7 @@ PnkClientHelper::SetFill(Ptr<Application> app,
                              uint32_t fillLength,
                              uint32_t dataLength)
 {
-    app->GetObject<UdpEchoClient>()->SetFill(fill, fillLength, dataLength);
+    app->GetObject<PnkClient>()->SetFill(fill, fillLength, dataLength);
 }
 
 ApplicationContainer
@@ -140,7 +143,7 @@ PnkClientHelper::Install(NodeContainer c) const
 Ptr<Application>
 PnkClientHelper::InstallPriv(Ptr<Node> node) const
 {
-    Ptr<Application> app = m_factory.Create<UdpEchoClient>();
+    Ptr<Application> app = m_factory.Create<PnkClient>();
     node->AddApplication(app);
 
     return app;
