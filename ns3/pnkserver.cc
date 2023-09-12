@@ -24,12 +24,13 @@
 #include "ns3/ipv6-address.h"
 #include "ns3/log.h"
 #include "ns3/nstime.h"
-#include "ns3/packet.h"
 #include "ns3/simulator.h"
 #include "ns3/socket-factory.h"
 #include "ns3/socket.h"
 #include "ns3/udp-socket.h"
 #include "ns3/uinteger.h"
+
+// #include "ns3/packet.h"
 
 namespace ns3
 {
@@ -168,6 +169,15 @@ PnkServer::HandleRead(Ptr<Socket> socket)
         socket->GetSockName(localAddress);
         m_rxTrace(packet);
         m_rxTraceWithAddresses(packet, from, localAddress);
+
+        packet->EnablePrinting();
+        std::cout << "Received packet: ";
+        packet->Print(std::cout);
+        std::cout << std::endl;
+
+        std::string load = packet->GetPacketLoad();
+        std::cout << "Packet load: " << load << std::endl;
+
         if (InetSocketAddress::IsMatchingType(from))
         {
             NS_LOG_INFO("At time " << Simulator::Now().As(Time::S) << " server received "

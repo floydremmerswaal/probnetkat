@@ -65,12 +65,11 @@ PnkClient::GetTypeId()
                           UintegerValue(0),
                           MakeUintegerAccessor(&PnkClient::m_peerPort),
                           MakeUintegerChecker<uint16_t>())
-            .AddAttribute(
-                "PacketSize",
-                "Size of echo data in outbound packets",
-                UintegerValue(100),
-                MakeUintegerAccessor(&PnkClient::SetDataSize, &PnkClient::GetDataSize),
-                MakeUintegerChecker<uint32_t>())
+            .AddAttribute("PacketSize",
+                          "Size of echo data in outbound packets",
+                          UintegerValue(100),
+                          MakeUintegerAccessor(&PnkClient::SetDataSize, &PnkClient::GetDataSize),
+                          MakeUintegerChecker<uint32_t>())
             .AddTraceSource("Tx",
                             "A new packet is created and is sent",
                             MakeTraceSourceAccessor(&PnkClient::m_txTrace),
@@ -367,29 +366,29 @@ PnkClient::Send()
 
     if (Ipv4Address::IsMatchingType(m_peerAddress))
     {
-        NS_LOG_INFO("ipv4address IsMatchingType");
-        NS_LOG_INFO("TEST1 At time " << Simulator::Now().As(Time::S) << " client sent " << m_size
+        // NS_LOG_INFO("ipv4address IsMatchingType");
+        NS_LOG_INFO("At time " << Simulator::Now().As(Time::S) << " client sent " << m_size
                                << " bytes to " << Ipv4Address::ConvertFrom(m_peerAddress)
                                << " port " << m_peerPort);
     }
     else if (Ipv6Address::IsMatchingType(m_peerAddress))
     {
-        NS_LOG_INFO("TEST2 At time " << Simulator::Now().As(Time::S) << " client sent " << m_size
+        NS_LOG_INFO("At time " << Simulator::Now().As(Time::S) << " client sent " << m_size
                                << " bytes to " << Ipv6Address::ConvertFrom(m_peerAddress)
                                << " port " << m_peerPort);
     }
     else if (InetSocketAddress::IsMatchingType(m_peerAddress))
     {
-        NS_LOG_INFO("InetSocketAddress IsMatchingType");
+        // NS_LOG_INFO("InetSocketAddress IsMatchingType");
         NS_LOG_INFO(
-            "TEST3 At time " << Simulator::Now().As(Time::S) << " client sent " << m_size << " bytes to "
+            "At time " << Simulator::Now().As(Time::S) << " client sent " << m_size << " bytes to "
                        << InetSocketAddress::ConvertFrom(m_peerAddress).GetIpv4() << " port "
                        << InetSocketAddress::ConvertFrom(m_peerAddress).GetPort());
     }
     else if (Inet6SocketAddress::IsMatchingType(m_peerAddress))
     {
         NS_LOG_INFO(
-            "TEST4 At time " << Simulator::Now().As(Time::S) << " client sent " << m_size << " bytes to "
+            "At time " << Simulator::Now().As(Time::S) << " client sent " << m_size << " bytes to "
                        << Inet6SocketAddress::ConvertFrom(m_peerAddress).GetIpv6() << " port "
                        << Inet6SocketAddress::ConvertFrom(m_peerAddress).GetPort());
     }
