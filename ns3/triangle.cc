@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     stack.Install(nodes);
 
     Ipv4AddressHelper address;
-    address.SetBase("10.1.1.0", "255.255.255.0");
+    address.SetBase("0.0.0.0", "255.255.255.0");
 
     Ipv4InterfaceContainer interfaces = address.Assign(devices);
 
@@ -77,13 +77,36 @@ int main(int argc, char *argv[])
     serverApps.Start(Seconds(1.0));
     serverApps.Stop(Seconds(10.0));
 
-    PnkClientHelper echoClient(interfaces.GetAddress(1), 9);
+    PnkClientHelper echoClient(interfaces.GetAddress(0));
 
     echoClient.SetAttribute("MaxPackets", UintegerValue(1));
     echoClient.SetAttribute("Interval", TimeValue(Seconds(1.0)));
     echoClient.SetAttribute("PacketSize", UintegerValue(1024));
 
-    ApplicationContainer clientApps = echoClient.Install(nodes);
+
+    AddressValue remoteAddress0(InetSocketAddress(interfaces.GetAddress(0)));
+    AddressValue remoteAddress1(InetSocketAddress(interfaces.GetAddress(1)));
+    AddressValue remoteAddress2(InetSocketAddress(interfaces.GetAddress(2)));
+    AddressValue remoteAddress3(InetSocketAddress(interfaces.GetAddress(3)));
+    AddressValue remoteAddress4(InetSocketAddress(interfaces.GetAddress(4)));
+    AddressValue remoteAddress5(InetSocketAddress(interfaces.GetAddress(5)));
+    
+
+    std::cout << "Number of interfaces: " << interfaces.GetN() << std::endl;
+
+    echoClient.SetAttribute("RemoteAddress", remoteAddress3);   
+    echoClient.SetAttribute("RemotePort", UintegerValue(9)); 
+    ApplicationContainer clientApps = echoClient.Install(nodes.Get(0));
+    echoClient.SetFill(clientApps.Get(0), "some string");
+    
+    // echoClient.SetAttribute("RemoteAddress", remoteAddress2);    
+    // clientApps.Add(echoClient.Install(nodes.Get(1)));
+    // echoClient.SetFill(clientApps.Get(1), "2");
+    
+    // echoClient.SetAttribute("RemoteAddress", remoteAddress0);    
+    // clientApps.Add(echoClient.Install(nodes.Get(2)));
+    // echoClient.SetFill(clientApps.Get(2), "3");
+    
 
     // for (auto app = clientApps.Begin(); app != clientApps.End(); ++app)
     // {
@@ -93,13 +116,13 @@ int main(int argc, char *argv[])
     clientApps.Start(Seconds(2.0));
     clientApps.Stop(Seconds(10.0));
 
-    for (uint32_t i = 0; i < 3; ++i)
-    {
-        // Create an on/off app sending packets to the same leaf right side
-        AddressValue remoteAddress(InetSocketAddress(interfaces.GetAddress((i + 1) % 3), 100 + i));
-        echoClient.SetAttribute("RemoteAddress", remoteAddress);
-        clientApps.Add(echoClient.Install(nodes.Get(i)));
-    }
+    // for (uint32_t i = 0; i < 3; ++i)
+    // {
+    //     // Create an on/off app sending packets to the same leaf right side
+    //     AddressValue remoteAddress(InetSocketAddress(interfaces.GetAddress((i + 1) % 3), 100 + i));
+    //     echoClient.SetAttribute("RemoteAddress", remoteAddress);
+    //     clientApps.Add(echoClient.Install(nodes.Get(i)));
+    // }
 
     // Create the animation object and configure for specified output
     AnimationInterface anim(animFile);
@@ -109,12 +132,12 @@ int main(int argc, char *argv[])
     // Set up the actual simulation
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
-    echoClient.SetFill(clientApps.Get(0), "1");
-    echoClient.SetFill(clientApps.Get(1), "02");
-    echoClient.SetFill(clientApps.Get(2), "003");
-    echoClient.SetFill(clientApps.Get(3), "0004");
-    echoClient.SetFill(clientApps.Get(4), "00005");
-    echoClient.SetFill(clientApps.Get(5), "000006");
+    // echoClient.SetFill(clientApps.Get(0), "1");
+    // echoClient.SetFill(clientApps.Get(1), "2");
+    // echoClient.SetFill(clientApps.Get(2), "3");
+    // echoClient.SetFill(clientApps.Get(3), "4");
+    // echoClient.SetFill(clientApps.Get(4), "5");
+    // echoClient.SetFill(clientApps.Get(5), "6");
 
     Simulator::Run();
     std::cout << "Animation Trace file created:" << animFile << std::endl;

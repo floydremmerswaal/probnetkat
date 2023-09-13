@@ -313,6 +313,7 @@ PnkClient::ScheduleTransmit(Time dt)
 void
 PnkClient::Send()
 {
+    std::cout << "Sending data" << std::endl;
     NS_LOG_FUNCTION(this);
 
     NS_ASSERT(m_sendEvent.IsExpired());
@@ -402,6 +403,7 @@ PnkClient::Send()
 void
 PnkClient::HandleRead(Ptr<Socket> socket)
 {
+    std::cout << "HandleRead!!!" << std::endl;
     NS_LOG_FUNCTION(this << socket);
     Ptr<Packet> packet;
     Address from;
