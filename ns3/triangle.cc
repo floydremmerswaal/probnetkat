@@ -13,7 +13,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "pnkhelper.h"
+#include "pnk-client-server-helper.h"
 
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"
@@ -32,7 +32,7 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("FirstScriptExample");
+NS_LOG_COMPONENT_DEFINE("TriangleTest");
 
 int main(int argc, char *argv[])
 {
@@ -40,36 +40,73 @@ int main(int argc, char *argv[])
     cmd.Parse(argc, argv);
 
     Time::SetResolution(Time::NS);
-    LogComponentEnable("PnkClientApplication", LOG_LEVEL_INFO);
-    LogComponentEnable("PnkServerApplication", LOG_LEVEL_INFO);
+    LogComponentEnable("PnkClient", LOG_LEVEL_INFO);
+    LogComponentEnable("PnkServer", LOG_LEVEL_INFO);
     // LogComponentEnable("PnkServerApplication", LOG_LEVEL_LOGIC);
 
-    NodeContainer nodes;
-    nodes.Create(3);
+    // NodeContainer nodes;
+    // nodes.Create(3);
 
     // MobilityHelper mobility;
     // mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
     // mobility.Install(nodes);
 
-    PointToPointHelper pointToPoint;
-    pointToPoint.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
-    pointToPoint.SetChannelAttribute("Delay", StringValue("2ms"));
+    const int n_nodes = 3;
 
-    NetDeviceContainer devices;
-    devices = pointToPoint.Install(nodes.Get(0), nodes.Get(1));
-    devices.Add(pointToPoint.Install(nodes.Get(0), nodes.Get(2)));
-    devices.Add(pointToPoint.Install(nodes.Get(1), nodes.Get(2)));
+    NodeContainer nodes; // Declare nodes objects
+    nodes.Create(n_nodes);
+
+    std::string LinkRate("10Mbps");
+    std::string LinkDelay("2ms");
+
+    NS_LOG_INFO("Create P2P Link Attributes.");
+
+    PointToPointHelper p2p;
+    p2p.SetDeviceAttribute("DataRate", StringValue(LinkRate));
+    p2p.SetChannelAttribute("Delay", StringValue(LinkDelay));
+
+    NS_LOG_INFO("Install Internet Stack to Nodes.");
+
+    InternetStackHelper internet;
+    internet.Install(NodeContainer::GetGlobal());
+
+    NS_LOG_INFO("Assign Addresses to Nodes.");
+
+    Ipv4AddressHelper ipv4_n;
+    ipv4_n.SetBase("10.0.0.0", "255.255.255.252");
+
+    NS_LOG_INFO("Create Links Between Nodes.");
+
+    uint32_t linkCount = 0;
+
+    std::vector<std::vector<bool>> Adj_Matrix;
+
+    Adj_Matrix.push_back({0,1,1});
+    Adj_Matrix.push_back({0,0,1});
+    Adj_Matrix.push_back({0,0,0});
+
+    for (size_t i = 0; i < Adj_Matrix.size(); i++)
+    {
+        for (size_t j = 0; j < Adj_Matrix[i].size(); j++)
+        {
+            if (Adj_Matrix[i][j] == 1)
+            {
+                NodeContainer n_links = NodeContainer(nodes.Get(i), nodes.Get(j));
+                NetDeviceContainer n_devs = p2p.Install(n_links);
+                ipv4_n.Assign(n_devs);
+                ipv4_n.NewNetwork();
+                linkCount++;
+                NS_LOG_INFO("matrix element [" << i << "][" << j << "] is 1");
+            }
+            else
+            {
+                NS_LOG_INFO("matrix element [" << i << "][" << j << "] is 0");
+            }
+        }
+    }
 
     // some animation stuf
     std::string animFile = "pnk-animation.xml"; // Name of file for animation output
-
-    InternetStackHelper stack;
-    stack.Install(nodes);
-
-    Ipv4AddressHelper address;
-    address.SetBase("0.0.0.0", "255.255.255.0");
-
-    Ipv4InterfaceContainer interfaces = address.Assign(devices);
 
     PnkServerHelper echoServer(9);
 
@@ -79,50 +116,15 @@ int main(int argc, char *argv[])
 
     PnkClientHelper echoClient(interfaces.GetAddress(0));
 
-    echoClient.SetAttribute("MaxPackets", UintegerValue(1));
-    echoClient.SetAttribute("Interval", TimeValue(Seconds(1.0)));
-    echoClient.SetAttribute("PacketSize", UintegerValue(1024));
+    // std::cout << "Number of interfaces: " << interfaces.GetN() << std::endl;
 
-
-    AddressValue remoteAddress0(InetSocketAddress(interfaces.GetAddress(0)));
-    AddressValue remoteAddress1(InetSocketAddress(interfaces.GetAddress(1)));
-    AddressValue remoteAddress2(InetSocketAddress(interfaces.GetAddress(2)));
-    AddressValue remoteAddress3(InetSocketAddress(interfaces.GetAddress(3)));
-    AddressValue remoteAddress4(InetSocketAddress(interfaces.GetAddress(4)));
-    AddressValue remoteAddress5(InetSocketAddress(interfaces.GetAddress(5)));
-    
-
-    std::cout << "Number of interfaces: " << interfaces.GetN() << std::endl;
-
-    echoClient.SetAttribute("RemoteAddress", remoteAddress3);   
-    echoClient.SetAttribute("RemotePort", UintegerValue(9)); 
+    // echoClient.SetAttribute("RemoteAddress", remoteAddress1);   
+    // echoClient.SetAttribute("RemotePort", UintegerValue(9)); 
     ApplicationContainer clientApps = echoClient.Install(nodes.Get(0));
-    echoClient.SetFill(clientApps.Get(0), "some string");
-    
-    // echoClient.SetAttribute("RemoteAddress", remoteAddress2);    
-    // clientApps.Add(echoClient.Install(nodes.Get(1)));
-    // echoClient.SetFill(clientApps.Get(1), "2");
-    
-    // echoClient.SetAttribute("RemoteAddress", remoteAddress0);    
-    // clientApps.Add(echoClient.Install(nodes.Get(2)));
-    // echoClient.SetFill(clientApps.Get(2), "3");
-    
 
-    // for (auto app = clientApps.Begin(); app != clientApps.End(); ++app)
-    // {
-    //     echoClient.SetFill(app, "Hello World");
-    // }
 
     clientApps.Start(Seconds(2.0));
     clientApps.Stop(Seconds(10.0));
-
-    // for (uint32_t i = 0; i < 3; ++i)
-    // {
-    //     // Create an on/off app sending packets to the same leaf right side
-    //     AddressValue remoteAddress(InetSocketAddress(interfaces.GetAddress((i + 1) % 3), 100 + i));
-    //     echoClient.SetAttribute("RemoteAddress", remoteAddress);
-    //     clientApps.Add(echoClient.Install(nodes.Get(i)));
-    // }
 
     // Create the animation object and configure for specified output
     AnimationInterface anim(animFile);
@@ -131,13 +133,6 @@ int main(int argc, char *argv[])
 
     // Set up the actual simulation
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
-
-    // echoClient.SetFill(clientApps.Get(0), "1");
-    // echoClient.SetFill(clientApps.Get(1), "2");
-    // echoClient.SetFill(clientApps.Get(2), "3");
-    // echoClient.SetFill(clientApps.Get(3), "4");
-    // echoClient.SetFill(clientApps.Get(4), "5");
-    // echoClient.SetFill(clientApps.Get(5), "6");
 
     Simulator::Run();
     std::cout << "Animation Trace file created:" << animFile << std::endl;
