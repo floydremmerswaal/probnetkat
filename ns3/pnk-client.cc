@@ -211,7 +211,7 @@ PnkClient::Send()
     // p->AddHeader(seqTs);
 
     PnkHeader pnkhead;
-    pnkhead.SetData(12345);
+    pnkhead.SetData(0);
     p->AddHeader(pnkhead);
 
     if ((m_socket->Send(p)) >= 0)

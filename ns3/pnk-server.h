@@ -82,6 +82,8 @@ class PnkServer : public Application
      */
     void SetPacketWindowSize(uint16_t size);
 
+    void SetNodeAddressMap(std::map<uint32_t, Ipv4Address> nodemap);
+
   protected:
     void DoDispose() override;
 
@@ -96,6 +98,8 @@ class PnkServer : public Application
      *
      * \param socket the socket the packet was received to.
      */
+
+    std::map<uint32_t, Ipv4Address> m_nodeAddressMap;
     void HandleRead(Ptr<Socket> socket);
 
     uint16_t m_port;                 //!< Port on which we listen for incoming packets.

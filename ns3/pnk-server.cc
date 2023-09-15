@@ -34,7 +34,18 @@
 #include "ns3/socket.h"
 #include "ns3/uinteger.h"
 
+#include "map"
+
 #include "pnk-header.h"
+
+const uint32_t SW = 0;
+const uint32_t PT = 1;
+const uint32_t DUP = 2;
+const uint32_t DROP = 3;
+
+uint32_t instr_map[] = {SW, DUP, SW, DUP, SW, DUP, DROP};
+
+uint32_t argument_map[] = {2, 0, 1, 0, 2, 0, 0};
 
 namespace ns3
 {
@@ -42,6 +53,7 @@ namespace ns3
 NS_LOG_COMPONENT_DEFINE("PnkServer");
 
 NS_OBJECT_ENSURE_REGISTERED(PnkServer);
+
 
 TypeId
 PnkServer::GetTypeId()
@@ -79,6 +91,7 @@ PnkServer::PnkServer()
 {
     NS_LOG_FUNCTION(this);
     m_received = 0;
+    m_nodeAddressMap = {};
 }
 
 PnkServer::~PnkServer()
@@ -153,6 +166,11 @@ PnkServer::StartApplication()
     m_socket6->SetRecvCallback(MakeCallback(&PnkServer::HandleRead, this));
 }
 
+void 
+PnkServer::SetNodeAddressMap(std::map<uint32_t, Ipv4Address> nodemap){
+    m_nodeAddressMap = nodemap;
+}
+
 void
 PnkServer::StopApplication()
 {
@@ -189,6 +207,39 @@ PnkServer::HandleRead(Ptr<Socket> socket)
             uint16_t pnkhead_val = pnkhead.GetData();
 
             std::cout << "Pnk header found: " << pnkhead_val << std::endl;
+
+            // print the attributes Node0, Node1 and Node2
+
+            uint32_t instr = instr_map[pnkhead_val];
+            Ptr<Packet> packet_copy = packet->Copy();
+            bool done = false;
+            // switch number
+            uint32_t target_sw = 0;
+            // program counter
+            uint32_t pc = 0;
+
+
+            while (!done){
+                switch(instr_map[pc]){
+                    case SW: // set the switch number of the packet
+                        std::cout << "SW" << std::endl;
+                        target_sw = argument_map[pc];
+                        break;
+                    case DUP: // send the packet
+                        // figure out which socket to send the packet on
+                        std::cout << "DUP" << std::endl;
+                        uint32_t arg = argument_map[pnkhead_val];
+                        m_socket->Send(packet_copy);
+                        done = true;
+                        break;
+                    case DROP:
+                        std::cout << "DROP" << std::endl;
+                        done = true;
+                        break;
+                }
+
+            }
+
 
             if (InetSocketAddress::IsMatchingType(from))
             {

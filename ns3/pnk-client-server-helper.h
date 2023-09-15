@@ -82,6 +82,8 @@ class PnkServerHelper
      */
     Ptr<PnkServer> GetServer();
 
+    ApplicationContainer Install(NodeContainer c, std::map<uint32_t, Ipv4Address> nodeAddressMap);
+
   private:
     ObjectFactory m_factory; //!< Object factory.
     Ptr<PnkServer> m_server; //!< The last created server application
@@ -140,6 +142,7 @@ class PnkClientHelper
      *
      * \returns the applications created, one application per input node.
      */
+
     ApplicationContainer Install(NodeContainer c);
 
   private:

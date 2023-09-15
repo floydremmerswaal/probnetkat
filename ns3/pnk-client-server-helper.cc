@@ -60,6 +60,25 @@ PnkServerHelper::Install(NodeContainer c)
     return apps;
 }
 
+ApplicationContainer
+PnkServerHelper::Install(NodeContainer c, std::map<uint32_t, Ipv4Address> nodeAddressMap)
+{
+    ApplicationContainer apps;
+    for (NodeContainer::Iterator i = c.Begin(); i != c.End(); ++i)
+    {
+        Ptr<Node> node = *i;
+
+        m_server = m_factory.Create<PnkServer>();
+
+        m_server->SetNodeAddressMap(nodeAddressMap);
+
+        node->AddApplication(m_server);
+        apps.Add(m_server);
+    }
+    return apps;
+}
+
+
 Ptr<PnkServer>
 PnkServerHelper::GetServer()
 {

@@ -105,12 +105,28 @@ int main(int argc, char *argv[])
         }
     }
 
+    // print the ipv4 addresess of the nodes
+
+    std::map<uint32_t, Ipv4Address> nodeAddressMap;
+    for (int i = 0; i < n_nodes; i++)
+    {
+        Ptr<Node> n = nodes.Get(i);
+        Ptr<Ipv4> ipv4 = n->GetObject<Ipv4>();
+        Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
+        Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
+        std::cout << "Node " << i << " has address " << ip_addr << std::endl;
+        std::string nodename = "Node" + std::to_string(i);
+        nodeAddressMap[i] = ip_addr;
+
+    }
+
+
     // some animation stuf
     std::string animFile = "pnk-animation.xml"; // Name of file for animation output
 
-    PnkServerHelper echoServer(9);
+    PnkServerHelper serverHelp(9);
 
-    ApplicationContainer serverApps = echoServer.Install(nodes);
+    ApplicationContainer serverApps = serverHelp.Install(nodes, nodeAddressMap);
 
     NS_LOG_INFO("Setup CBR Traffic Sources.");
 
@@ -119,34 +135,46 @@ int main(int argc, char *argv[])
     double AppStartTime = 2.0001;
     double AppStopTime = 10.80001;
 
-    for (int i = 0; i < n_nodes; i++)
-    {
-        for (int j = 0; j < n_nodes; j++)
-        {
-            if (i != j)
-            {
-                // We needed to generate a random number (rn) to be used to eliminate
-                // the artificial congestion caused by sending the packets at the
-                // same time. This rn is added to AppStartTime to have the sources
-                // start at different time, however they will still send at the same rate.
+    // for (int i = 0; i < n_nodes; i++)
+    // {
+    //     for (int j = 0; j < n_nodes; j++)
+    //     {
+    //         if (i != j)
+    //         {
+    //             // We needed to generate a random number (rn) to be used to eliminate
+    //             // the artificial congestion caused by sending the packets at the
+    //             // same time. This rn is added to AppStartTime to have the sources
+    //             // start at different time, however they will still send at the same rate.
 
-                // Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable>();
-                // x->SetAttribute("Min", DoubleValue(0));
-                // x->SetAttribute("Max", DoubleValue(1));
-                // double rn = x->GetValue();
-                Ptr<Node> n = nodes.Get(j);
-                Ptr<Ipv4> ipv4 = n->GetObject<Ipv4>();
-                Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
-                Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
-                PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
-                clienth.SetAttribute("MaxPackets", UintegerValue(1));
-                ApplicationContainer apps =
-                    clienth.Install(nodes.Get(i)); // traffic sources are installed on all nodes
-                apps.Start(Seconds(AppStartTime+(3* i)+j));
-                apps.Stop(Seconds(AppStopTime));
-            }
-        }
-    }
+    //             // Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable>();
+    //             // x->SetAttribute("Min", DoubleValue(0));
+    //             // x->SetAttribute("Max", DoubleValue(1));
+    //             // double rn = x->GetValue();
+    //             Ptr<Node> n = nodes.Get(j);
+    //             Ptr<Ipv4> ipv4 = n->GetObject<Ipv4>();
+    //             Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
+    //             Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
+    //             PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
+    //             clienth.SetAttribute("MaxPackets", UintegerValue(1));
+    //             ApplicationContainer apps =
+    //                 clienth.Install(nodes.Get(i)); // traffic sources are installed on all nodes
+    //             apps.Start(Seconds(AppStartTime+(3* i)+j));
+    //             apps.Stop(Seconds(AppStopTime));
+    //         }
+    //     }
+    // }
+
+    Ptr<Node> n = nodes.Get(1);
+    Ptr<Ipv4> ipv4 = n->GetObject<Ipv4>();
+    Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
+    Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
+    PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
+    clienth.SetAttribute("MaxPackets", UintegerValue(1));
+    ApplicationContainer apps =
+        clienth.Install(nodes.Get(0)); // traffic sources are installed on all nodes
+    apps.Start(Seconds(AppStartTime));
+    apps.Stop(Seconds(AppStopTime));
+        
 
     // Create the animation object and configure for specified output
     AnimationInterface anim(animFile);
