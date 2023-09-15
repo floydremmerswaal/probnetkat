@@ -32,6 +32,8 @@
 #include "ns3/socket.h"
 #include "ns3/uinteger.h"
 
+#include "pnk-header.h"
+
 #include <cstdio>
 #include <cstdlib>
 
@@ -203,10 +205,14 @@ PnkClient::Send()
 {
     NS_LOG_FUNCTION(this);
     NS_ASSERT(m_sendEvent.IsExpired());
-    SeqTsHeader seqTs;
-    seqTs.SetSeq(m_sent);
+    // SeqTsHeader seqTs;
+    // seqTs.SetSeq(m_sent);
     Ptr<Packet> p = Create<Packet>(m_size - (8 + 4)); // 8+4 : the size of the seqTs header
-    p->AddHeader(seqTs);
+    // p->AddHeader(seqTs);
+
+    PnkHeader pnkhead;
+    pnkhead.SetData(12345);
+    p->AddHeader(pnkhead);
 
     if ((m_socket->Send(p)) >= 0)
     {

@@ -34,6 +34,8 @@
 #include "ns3/socket.h"
 #include "ns3/uinteger.h"
 
+#include "pnk-header.h"
+
 namespace ns3
 {
 
@@ -178,8 +180,16 @@ PnkServer::HandleRead(Ptr<Socket> socket)
         {
             uint32_t receivedSize = packet->GetSize();
             SeqTsHeader seqTs;
-            packet->RemoveHeader(seqTs);
-            uint32_t currentSequenceNumber = seqTs.GetSeq();
+            uint32_t currentSequenceNumber = 0;
+            // packet->RemoveHeader(seqTs);
+            // uint32_t currentSequenceNumber = seqTs.GetSeq();
+
+            PnkHeader pnkhead;
+            packet->RemoveHeader(pnkhead);
+            uint16_t pnkhead_val = pnkhead.GetData();
+
+            std::cout << "Pnk header found: " << pnkhead_val << std::endl;
+
             if (InetSocketAddress::IsMatchingType(from))
             {
                 NS_LOG_INFO("TraceDelay: RX " << receivedSize << " bytes from "

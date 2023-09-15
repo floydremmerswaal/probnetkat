@@ -111,20 +111,42 @@ int main(int argc, char *argv[])
     PnkServerHelper echoServer(9);
 
     ApplicationContainer serverApps = echoServer.Install(nodes);
-    serverApps.Start(Seconds(1.0));
-    serverApps.Stop(Seconds(10.0));
 
-    PnkClientHelper echoClient(interfaces.GetAddress(0));
+    NS_LOG_INFO("Setup CBR Traffic Sources.");
 
-    // std::cout << "Number of interfaces: " << interfaces.GetN() << std::endl;
+    uint16_t port = 9;
 
-    // echoClient.SetAttribute("RemoteAddress", remoteAddress1);   
-    // echoClient.SetAttribute("RemotePort", UintegerValue(9)); 
-    ApplicationContainer clientApps = echoClient.Install(nodes.Get(0));
+    double AppStartTime = 2.0001;
+    double AppStopTime = 10.80001;
 
+    for (int i = 0; i < n_nodes; i++)
+    {
+        for (int j = 0; j < n_nodes; j++)
+        {
+            if (i != j)
+            {
+                // We needed to generate a random number (rn) to be used to eliminate
+                // the artificial congestion caused by sending the packets at the
+                // same time. This rn is added to AppStartTime to have the sources
+                // start at different time, however they will still send at the same rate.
 
-    clientApps.Start(Seconds(2.0));
-    clientApps.Stop(Seconds(10.0));
+                // Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable>();
+                // x->SetAttribute("Min", DoubleValue(0));
+                // x->SetAttribute("Max", DoubleValue(1));
+                // double rn = x->GetValue();
+                Ptr<Node> n = nodes.Get(j);
+                Ptr<Ipv4> ipv4 = n->GetObject<Ipv4>();
+                Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
+                Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
+                PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
+                clienth.SetAttribute("MaxPackets", UintegerValue(1));
+                ApplicationContainer apps =
+                    clienth.Install(nodes.Get(i)); // traffic sources are installed on all nodes
+                apps.Start(Seconds(AppStartTime+(3* i)+j));
+                apps.Stop(Seconds(AppStopTime));
+            }
+        }
+    }
 
     // Create the animation object and configure for specified output
     AnimationInterface anim(animFile);
