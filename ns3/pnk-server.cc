@@ -66,6 +66,41 @@ struct PnkPrgrmNode {
     PnkPrgrmNode* prev;
 };
 
+PnkPrgrm getCurrentProgram(){
+    PnkPrgrm ret;
+    
+    PnkPrgrmNode* node0 = new PnkPrgrmNode();
+    node0->instr = SW;
+    node0->arg = 2;
+    node0->next1 = nullptr;
+    node0->next2 = nullptr;
+
+    ret.nodeNrToNode[0] = node0;
+    ret.start = node0;
+
+    PnkPrgrmNode* node1 = new PnkPrgrmNode();
+    node1->instr = DUP;
+    node1->arg = 0;
+    node1->next1 = nullptr;
+    node1->next2 = nullptr;
+    node1->prev = node0;
+    node1->prev->next = node1;
+
+    ret.nodeNrToNode[1] = node1;
+
+    PnkPrgrmNode* node2 = new PnkPrgrmNode();
+    node2->instr = SW;
+    node2->arg = 1;
+    node2->next1 = nullptr;
+    node2->next2 = nullptr;
+    node2->prev = node1;
+    node2->prev->next = node2;
+
+    ret.nodeNrToNode[2] = node2;
+
+
+}
+
 std::string instrString(uint32_t instr){
     std::string ret = "";
 
