@@ -100,11 +100,15 @@ class PnkServer : public Application
      */
 
     std::map<uint32_t, Ipv4Address> m_nodeAddressMap;
+    std::map<uint32_t, Ptr<Socket>> m_socketMap; //!< IPv4 Socket maps 
+
     void HandleRead(Ptr<Socket> socket);
 
     uint16_t m_port;                 //!< Port on which we listen for incoming packets.
     Ptr<Socket> m_socket;            //!< IPv4 Socket
     Ptr<Socket> m_socket6;           //!< IPv6 Socket
+
+    
     uint64_t m_received;             //!< Number of received packets
     PacketLossCounter m_lossCounter; //!< Lost packet counter
 

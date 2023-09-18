@@ -82,12 +82,12 @@ int main(int argc, char *argv[])
     std::vector<std::vector<bool>> Adj_Matrix;
 
     Adj_Matrix.push_back({0,1,1});
-    Adj_Matrix.push_back({0,0,1});
-    Adj_Matrix.push_back({0,0,0});
+    Adj_Matrix.push_back({1,0,1});
+    Adj_Matrix.push_back({1,1,0});
 
     for (size_t i = 0; i < Adj_Matrix.size(); i++)
     {
-        for (size_t j = 0; j < Adj_Matrix[i].size(); j++)
+        for (size_t j = i; j < Adj_Matrix[i].size(); j++)
         {
             if (Adj_Matrix[i][j] == 1)
             {
@@ -125,6 +125,8 @@ int main(int argc, char *argv[])
     std::string animFile = "pnk-animation.xml"; // Name of file for animation output
 
     PnkServerHelper serverHelp(9);
+
+    
 
     ApplicationContainer serverApps = serverHelp.Install(nodes, nodeAddressMap);
 

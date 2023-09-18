@@ -38,14 +38,65 @@
 
 #include "pnk-header.h"
 
-const uint32_t SW = 0;
-const uint32_t PT = 1;
-const uint32_t DUP = 2;
-const uint32_t DROP = 3;
+#define SW 0
+#define PT  1
+#define TESTSW 2
+#define TESTPT 3
+#define DUP 4
+#define DROP 5
+#define SKIP 6
+#define PROB 7
+#define PAR 8
+#define KLEENE 9
 
-uint32_t instr_map[] = {SW, DUP, SW, DUP, SW, DUP, DROP};
+uint32_t instr_map[] = {SW, DUP, SW, DUP, SW, DUP, SW, DUP, SW, DUP, SW, DUP, TESTSW, DROP};
 
-uint32_t argument_map[] = {2, 0, 1, 0, 2, 0, 0};
+uint32_t argument_map[] = {2, 0, 1, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 0};
+
+struct PnkPrgrm {
+    PnkPrgrmNode* start;
+    std::map<uint32_t, PnkPrgrmNode*> nodeNrToNode;
+}
+
+struct PnkPrgrmNode {
+    uint32_t instr;
+    uint32_t arg;
+    PnkPrgrmNode* next1; // no branching: next1
+    PnkPrgrmNode* next2; // used for branching
+    PnkPrgrmNode* prev;
+};
+
+std::string instrString(uint32_t instr){
+    std::string ret = "";
+
+    switch(instr){
+        case SW:
+            ret = "SW";
+            break;
+        case PT:
+            ret = "PT";
+            break;
+        case DUP:
+            ret = "DUP";
+            break;
+        case DROP:
+            ret = "DROP";
+            break;
+        case SKIP:
+            ret = "SKIP";
+            break;
+        case TESTSW:
+            ret = "TESTSW";
+            break;
+        case TESTPT:
+            ret = "TESTPT";
+            break;
+        default:
+            ret = "UNKNOWN";
+            break;
+    }
+    return ret;
+}
 
 namespace ns3
 {
@@ -92,6 +143,7 @@ PnkServer::PnkServer()
     NS_LOG_FUNCTION(this);
     m_received = 0;
     m_nodeAddressMap = {};
+    m_socketMap = {};
 }
 
 PnkServer::~PnkServer()
@@ -164,6 +216,23 @@ PnkServer::StartApplication()
     }
 
     m_socket6->SetRecvCallback(MakeCallback(&PnkServer::HandleRead, this));
+
+    for (auto const& x : m_nodeAddressMap)
+    {
+        // Now create sockets and store them in the socket map
+
+        Address peerAddress = InetSocketAddress(x.second, 9);
+
+        TypeId tid = TypeId::LookupByName("ns3::UdpSocketFactory");
+        Ptr<Socket> cur_socket = Socket::CreateSocket(GetNode(), tid);
+        if (cur_socket->Bind() == -1)
+        {
+            NS_FATAL_ERROR("Failed to bind socket");
+        }
+        cur_socket->Connect(peerAddress);
+
+        m_socketMap[x.first] = cur_socket;
+    }
 }
 
 void 
@@ -185,6 +254,8 @@ PnkServer::StopApplication()
 void
 PnkServer::HandleRead(Ptr<Socket> socket)
 {
+    const uint32_t thisNodeNumber = GetNode()->GetId();
+    std::cout << "HandleRead called for nodeid " << thisNodeNumber << std::endl;
     NS_LOG_FUNCTION(this << socket);
     Ptr<Packet> packet;
     Address from;
@@ -194,6 +265,17 @@ PnkServer::HandleRead(Ptr<Socket> socket)
         socket->GetSockName(localAddress);
         m_rxTrace(packet);
         m_rxTraceWithAddresses(packet, from, localAddress);
+
+        /*
+                Ptr<Node> n = nodes.Get(1);
+                Ptr<Ipv4> ipv4 = n->GetObject<Ipv4>();
+                Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
+                Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
+
+        */
+
+        // we moeten weten welke socket, denk ik.        
+
         if (packet->GetSize() > 0)
         {
             uint32_t receivedSize = packet->GetSize();
@@ -210,33 +292,65 @@ PnkServer::HandleRead(Ptr<Socket> socket)
 
             // print the attributes Node0, Node1 and Node2
 
-            uint32_t instr = instr_map[pnkhead_val];
             Ptr<Packet> packet_copy = packet->Copy();
             bool done = false;
             // switch number
             uint32_t target_sw = 0;
             // program counter
-            uint32_t pc = 0;
-
-
+            uint32_t pc = pnkhead_val;                        
             while (!done){
+                std::cout << "PC: " << pc << ", instr: " << instrString(instr_map[pc]) << ", arg: " << argument_map[pc] << std::endl;
                 switch(instr_map[pc]){
                     case SW: // set the switch number of the packet
-                        std::cout << "SW" << std::endl;
                         target_sw = argument_map[pc];
+                        std::cout << "SW:" << target_sw << std::endl;
                         break;
-                    case DUP: // send the packet
+                    case DUP: {// send the packet
                         // figure out which socket to send the packet on
-                        std::cout << "DUP" << std::endl;
-                        uint32_t arg = argument_map[pnkhead_val];
-                        m_socket->Send(packet_copy);
+                        std::cout << "DUP: " << target_sw << std::endl;
+                        
+                        packet_copy->RemoveHeader(pnkhead);
+                        pnkhead.SetData(pc+1);
+                        packet_copy->AddHeader(pnkhead);
+
+                        if (m_socketMap[target_sw]->Send(packet_copy)) {
+                            std::cout << "Sending to node " << target_sw << ", ip " << m_nodeAddressMap[target_sw] << std::endl;
+                        } else {
+                            std::cout << "Sending to " << m_nodeAddressMap[target_sw] << " failed" << std::endl;
+                        }
                         done = true;
                         break;
-                    case DROP:
+                    }
+                    case DROP: {
                         std::cout << "DROP" << std::endl;
                         done = true;
                         break;
+                    }
+                    case TESTSW: {
+                        std::cout << "TEST SW(" << thisNodeNumber << ")" << " == " << argument_map[pc] << std::endl;
+                        std::cout << thisNodeNumber << std::endl;
+                        if (argument_map[pc] == thisNodeNumber){
+                            std::cout << "True" << std::endl;
+                            // do nothing
+                        }
+                        else {
+                            // effectively drop
+                            std::cout << "False" << std::endl;
+                            done = true;
+                        }
+                        break;
+                    }
+                    case SKIP: {
+                        std::cout << "SKIP" << std::endl;
+                        break;
+                    }
+                    default: {
+                        std::cout << "WARNING: unknown instruction" << std::endl;
+                        done = true;
+                        break;
+                    }
                 }
+                pc++;
 
             }
 
