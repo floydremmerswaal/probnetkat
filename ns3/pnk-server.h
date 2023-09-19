@@ -24,6 +24,8 @@
 
 #include "ns3/packet-loss-counter.h"
 
+
+#include "ns3/core-module.h"
 #include "ns3/address.h"
 #include "ns3/application.h"
 #include "ns3/event-id.h"
@@ -101,6 +103,7 @@ class PnkServer : public Application
 
     std::map<uint32_t, Ipv4Address> m_nodeAddressMap;
     std::map<uint32_t, Ptr<Socket>> m_socketMap; //!< IPv4 Socket maps 
+    Ptr<UniformRandomVariable> m_rng;
 
     void HandleRead(Ptr<Socket> socket);
 
