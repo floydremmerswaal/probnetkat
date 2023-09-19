@@ -53,52 +53,87 @@ uint32_t instr_map[] = {SW, DUP, SW, DUP, SW, DUP, SW, DUP, SW, DUP, SW, DUP, TE
 
 uint32_t argument_map[] = {2, 0, 1, 0, 0, 0, 2, 0, 1, 0, 0, 0, 1, 0};
 
-struct PnkPrgrm {
-    PnkPrgrmNode* start;
-    std::map<uint32_t, PnkPrgrmNode*> nodeNrToNode;
-}
-
 struct PnkPrgrmNode {
     uint32_t instr;
     uint32_t arg;
+    float farg;
     PnkPrgrmNode* next1; // no branching: next1
     PnkPrgrmNode* next2; // used for branching
     PnkPrgrmNode* prev;
+    int nodenr;
 };
+
+class PnkPrgrm {
+    public:
+        PnkPrgrm();
+        ~PnkPrgrm();
+        void addNode(int nodenr, uint32_t instr, uint32_t arg, float farg, bool nextis1);
+        PnkPrgrmNode* getNode(uint32_t nodenr);
+
+    private:
+        PnkPrgrmNode* start;
+        std::map<uint32_t, PnkPrgrmNode*> nodeNrToNode;
+        uint32_t nodeCount;
+};
+
+PnkPrgrm::PnkPrgrm(){
+    nodeCount = 0;
+    return;
+}
+
+PnkPrgrmNode* PnkPrgrm::getNode(uint32_t nodenr){
+    if (nodeNrToNode.count(nodenr) > 0)
+        return nodeNrToNode[nodenr];
+    return nullptr;
+}
+
+PnkPrgrm::~PnkPrgrm(){
+    for (uint32_t i = 0; i < nodeCount; i++){
+        delete nodeNrToNode[i];
+    }
+    return;
+}
+
+void PnkPrgrm::addNode(int parentnodenr, uint32_t instr, uint32_t arg, float farg, bool isnext2){
+    PnkPrgrmNode* newnode = new PnkPrgrmNode();
+    newnode->instr = instr;
+    newnode->arg = arg;
+    newnode->farg = farg;
+    newnode->next1 = nullptr;
+    newnode->next2 = nullptr;
+    
+    if (parentnodenr == -1){
+        newnode->nodenr = 0;
+        start = newnode;
+        nodeNrToNode[0] = start; 
+    } else {
+        PnkPrgrmNode* node = nodeNrToNode[parentnodenr];
+        if (!isnext2){
+            node->next1 = newnode;
+        } else {
+            node->next2 = newnode;
+        }
+        newnode->prev = node;
+        newnode->nodenr = nodeCount;
+        nodeNrToNode[nodeCount] = newnode;
+    }
+    nodeCount++;
+    return;
+}
 
 PnkPrgrm getCurrentProgram(){
     PnkPrgrm ret;
-    
-    PnkPrgrmNode* node0 = new PnkPrgrmNode();
-    node0->instr = SW;
-    node0->arg = 2;
-    node0->next1 = nullptr;
-    node0->next2 = nullptr;
 
-    ret.nodeNrToNode[0] = node0;
-    ret.start = node0;
+    ret.addNode(-1, SW, 2, 0.0f, false);
+    ret.addNode(0, DUP, 0, 0.0f, false);
+    for (int i = 0; i < 20; i+=4){
+        ret.addNode(1+i, SW, 1, 0.0f, false);
+        ret.addNode(1+i+1, DUP, 0, 0.0f, false);
+        ret.addNode(1+i+2, SW, 2, 0.0f, false);
+        ret.addNode(1+i+3, DUP, 0, 0.0f, false);
 
-    PnkPrgrmNode* node1 = new PnkPrgrmNode();
-    node1->instr = DUP;
-    node1->arg = 0;
-    node1->next1 = nullptr;
-    node1->next2 = nullptr;
-    node1->prev = node0;
-    node1->prev->next = node1;
-
-    ret.nodeNrToNode[1] = node1;
-
-    PnkPrgrmNode* node2 = new PnkPrgrmNode();
-    node2->instr = SW;
-    node2->arg = 1;
-    node2->next1 = nullptr;
-    node2->next2 = nullptr;
-    node2->prev = node1;
-    node2->prev->next = node2;
-
-    ret.nodeNrToNode[2] = node2;
-
-
+    }
+    return ret;
 }
 
 std::string instrString(uint32_t instr){
@@ -289,8 +324,9 @@ PnkServer::StopApplication()
 void
 PnkServer::HandleRead(Ptr<Socket> socket)
 {
-    const uint32_t thisNodeNumber = GetNode()->GetId();
-    std::cout << "HandleRead called for nodeid " << thisNodeNumber << std::endl;
+    PnkPrgrm curprog = getCurrentProgram();
+    const uint32_t thisNetworkNodeNumber = GetNode()->GetId();
+    std::cout << "HandleRead called for nodeid " << thisNetworkNodeNumber << std::endl;
     NS_LOG_FUNCTION(this << socket);
     Ptr<Packet> packet;
     Address from;
@@ -321,37 +357,67 @@ PnkServer::HandleRead(Ptr<Socket> socket)
 
             PnkHeader pnkhead;
             packet->RemoveHeader(pnkhead);
-            uint16_t pnkhead_val = pnkhead.GetData();
 
-            std::cout << "Pnk header found: " << pnkhead_val << std::endl;
 
-            // print the attributes Node0, Node1 and Node2
+            std::cout << "Pnk header found." << std::endl;
+            std::cout << "Cur: " << pnkhead.GetCur() << std::endl;
+            std::cout << "Sw: " << pnkhead.GetSwitch() << std::endl;
+            std::cout << "Pt: " << pnkhead.GetPort() << std::endl;
 
             Ptr<Packet> packet_copy = packet->Copy();
             bool done = false;
-            // switch number
-            uint32_t target_sw = 0;
-            // program counter
-            uint32_t pc = pnkhead_val;                        
+
             while (!done){
-                std::cout << "PC: " << pc << ", instr: " << instrString(instr_map[pc]) << ", arg: " << argument_map[pc] << std::endl;
-                switch(instr_map[pc]){
+                PnkPrgrmNode* curnode = curprog.getNode(pnkhead.GetCur());
+                uint32_t instr = curnode->instr;
+                uint32_t arg = curnode->arg;
+                uint32_t farg = curnode->farg;
+                uint32_t curnodenr = curnode->nodenr;
+
+                farg = farg + 0; // unused variable 
+
+
+                std::cout << "PC: " << curnodenr << ", instr: " << instrString(instr) << ", arg: " << arg << std::endl;
+
+                switch(instr){
                     case SW: // set the switch number of the packet
-                        target_sw = argument_map[pc];
-                        std::cout << "SW:" << target_sw << std::endl;
+                        pnkhead.SetSwitch(arg);
+                        std::cout << "SW <- " << arg << std::endl;
+                        break;
+                    case PT:
+                        pnkhead.SetPort(arg);
+                        std::cout << "PT <- " << arg << std::endl;
                         break;
                     case DUP: {// send the packet
                         // figure out which socket to send the packet on
-                        std::cout << "DUP: " << target_sw << std::endl;
+                        std::cout << "DUP" << std::endl;
                         
-                        packet_copy->RemoveHeader(pnkhead);
-                        pnkhead.SetData(pc+1);
+                        int nextnodenr;
+                        if (curnode->next1 != nullptr){
+                            nextnodenr = curnode->next1->nodenr;
+                            std::cout << "Next node is " << nextnodenr << std::endl;
+                        }
+                        else {
+                            // error we do not know what to do
+                            std::cout << "No next node???" << std::endl;
+                            return;
+                        }
+                        packet_copy->Print(std::cout);
+
+                        PnkHeader dummyhead;
+                        packet_copy->RemoveHeader(dummyhead);
+
+                        packet_copy->Print(std::cout);
+                        pnkhead.SetCur(nextnodenr);
+                        
                         packet_copy->AddHeader(pnkhead);
 
-                        if (m_socketMap[target_sw]->Send(packet_copy)) {
-                            std::cout << "Sending to node " << target_sw << ", ip " << m_nodeAddressMap[target_sw] << std::endl;
+                        packet_copy->Print(std::cout);
+
+                        if (m_socketMap[pnkhead.GetSwitch()]->Send(packet_copy)) {
+                            std::cout << "Sending to node " << pnkhead.GetSwitch() << ", ip " << m_nodeAddressMap[pnkhead.GetSwitch()] << std::endl;
                         } else {
-                            std::cout << "Sending to " << m_nodeAddressMap[target_sw] << " failed" << std::endl;
+                            std::cout << "Sending to " << m_nodeAddressMap[pnkhead.GetSwitch()] << " failed" << std::endl;
                         }
                         done = true;
                         break;
@@ -362,18 +428,21 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                         break;
                     }
                     case TESTSW: {
-                        std::cout << "TEST SW(" << thisNodeNumber << ")" << " == " << argument_map[pc] << std::endl;
-                        std::cout << thisNodeNumber << std::endl;
-                        if (argument_map[pc] == thisNodeNumber){
-                            std::cout << "True" << std::endl;
-                            // do nothing
-                        }
-                        else {
-                            // effectively drop
-                            std::cout << "False" << std::endl;
-                            done = true;
-                        }
+
+                        std::cout << "Not yet implemented" << std::endl;
                         break;
+                        // std::cout << "TEST SW(" << thisNetworkNodeNumber << ")" << " == " << argument_map[pc] << std::endl;
+                        // std::cout << thisNetworkNodeNumber << std::endl;
+                        // if (argument_map[pc] == thisNetworkNodeNumber){
+                        //     std::cout << "True" << std::endl;
+                        //     // do nothing
+                        // }
+                        // else {
+                        //     // effectively drop
+                        //     std::cout << "False" << std::endl;
+                        //     done = true;
+                        // }
+                        // break;
                     }
                     case SKIP: {
                         std::cout << "SKIP" << std::endl;
@@ -385,7 +454,11 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                         break;
                     }
                 }
-                pc++;
+                // pc++; oh how simple it was when we just had linear programs
+                
+                // set the new current (pc basically) to the number of the next node after this one
+                // probably just +1 in the most cases but hey
+                pnkhead.SetCur(curprog.getNode(pnkhead.GetCur())->next1->nodenr); 
 
             }
 

@@ -13,7 +13,14 @@ namespace ns3  {
     PnkHeader ();
     // new methods
     void SetData (uint16_t data);
-    uint16_t GetData (void);
+    uint16_t GetData(void);
+    void SetSwitch(uint16_t sw);
+    uint16_t GetSwitch(void);
+    void SetPort(uint16_t pt);
+    uint16_t GetPort(void);
+    void SetCur(uint16_t cur);
+    uint16_t GetCur(void);
+
     // new method needed
     static TypeId GetTypeId (void);
     // overridden from Header
@@ -24,6 +31,10 @@ namespace ns3  {
     uint32_t Deserialize(Buffer::Iterator start) override;
     private:
     uint16_t m_data;
+    uint16_t m_sw;
+    uint16_t m_pt;
+    uint16_t m_cur;
+    
     };
 
 } // namespace ns3
