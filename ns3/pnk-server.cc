@@ -122,13 +122,13 @@ PnkPrgrm getCurrentProgram(){
     int nodenr = 0;
     ret.addNode(-1, SW, 2, 1.0f, false);
     ret.addNode(0, DUP, 0, 0.0f, false);
-    nodenr = ret.addNode(1, PROB, 0, 0.9, false );
+    nodenr = ret.addNode(1, PROB, 0, 0.5, false );
     //branching left
     int left = ret.addNode(nodenr, SW, 0, 0.0f, false);
     left = ret.addNode(left, DUP, 0, 0.0f, false);
     //branching right
     int right = ret.addNode(nodenr, SW, 1, 0.0f, true);
-    right = ret.addNode(right, DUP, 0, 0.0f, true);
+    right = ret.addNode(right, DUP, 0, 0.0f, false);
     // maybe we should be able to merge the paths again?
     ret.addNode(left, DROP, 0, 0.0F, false);
     ret.addNode(right, DROP, 0, 0.0F, false);
@@ -163,6 +163,8 @@ std::string instrString(uint32_t instr){
         case PROB:
             ret = "PROB";
             break;
+        case PAR:
+            ret = "PAR";
         default:
             ret = "UNKNOWN";
             break;
@@ -306,6 +308,8 @@ PnkServer::StartApplication()
         m_socketMap[x.first] = cur_socket;
     }
 
+    RngSeedManager::SetSeed(3);  // Changes seed from default of 1 to 3
+    RngSeedManager::SetRun(7);
 
     m_rng = CreateObject<UniformRandomVariable>();
     m_rng->SetAttribute("Min", DoubleValue(0));
@@ -428,23 +432,39 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                         double rnd = m_rng->GetValue();
                         std::cout << "Rnd value: " << rnd << " so taking " << (rnd < farg ? "left" : "right") << " branch" << std::endl;
                         takefirstbranch = (rnd < farg);
+                        std::cout << "Take first branch: " << takefirstbranch << std::endl;
+                        break;
+                    }
+                    case PAR: {
+                        // this one requires some thought
                         break;
                     }
                     case TESTSW: {
-
-                        std::cout << "Not yet implemented" << std::endl;
-                        break;
-                        // std::cout << "TEST SW(" << thisNetworkNodeNumber << ")" << " == " << argument_map[pc] << std::endl;
-                        // std::cout << thisNetworkNodeNumber << std::endl;
-                        // if (argument_map[pc] == thisNetworkNodeNumber){
-                        //     std::cout << "True" << std::endl;
-                        //     // do nothing
-                        // }
-                        // else {
-                        //     // effectively drop
-                        //     std::cout << "False" << std::endl;
-                        //     done = true;
-                        // }
+                        std::cout << "TEST SW" << pnkhead.GetSwitch() << " == " << arg << " ?" << std::endl;
+                        if (arg == pnkhead.GetSwitch()){
+                            std::cout << "True" << std::endl;
+                            // do nothing
+                        }
+                        else {
+                            // effectively drop
+                            std::cout << "False" << std::endl;
+                            done = true;
+                            return;
+                        }
+                        // break;
+                    }
+                    case TESTPT: {
+                        std::cout << "TEST PT(" << pnkhead.GetPort() << ") == " << arg << " ?" << std::endl;
+                        if (arg == pnkhead.GetPort()){
+                            std::cout << "True" << std::endl;
+                            // do nothing
+                        }
+                        else {
+                            // effectively drop
+                            std::cout << "False" << std::endl;
+                            done = true;
+                            return;
+                        }
                         // break;
                     }
                     case SKIP: {
@@ -459,8 +479,6 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                 }
                 // pc++; oh how simple it was when we just had linear programs
                 
-                // set the new current (pc basically) to the number of the next node after this one
-                // probably just +1 in the most cases but hey
                 if (takefirstbranch && curnode->next1 != nullptr){
                     pnkhead.SetCur(curnode->next1->nodenr); 
                 }  else if (!takefirstbranch && curnode->next2 != nullptr) {

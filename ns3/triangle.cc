@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
     Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
     Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
     PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
-    clienth.SetAttribute("MaxPackets", UintegerValue(1));
+    clienth.SetAttribute("MaxPackets", UintegerValue(10));
     ApplicationContainer apps =
         clienth.Install(nodes.Get(0)); // traffic sources are installed on all nodes
     apps.Start(Seconds(AppStartTime));
