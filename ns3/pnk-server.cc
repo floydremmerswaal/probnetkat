@@ -47,7 +47,8 @@
 #define SKIP 6
 #define PROB 7
 #define PAR 8
-#define KLEENE 9
+#define KLEENESTART 9
+#define KLEENESTOP 10
 
 struct PnkPrgrmNode {
     uint32_t instr;
@@ -56,7 +57,7 @@ struct PnkPrgrmNode {
     PnkPrgrmNode* next1; // no branching: next1
     PnkPrgrmNode* next2; // used for branching
     PnkPrgrmNode* prev;
-    int nodenr;
+    int nodenr; // so the node knows its own number
 };
 
 class PnkPrgrm {
@@ -117,10 +118,26 @@ int PnkPrgrm::addNode(int parentnodenr, uint32_t instr, uint32_t arg, double far
     return newnode->nodenr;
 }
 
+PnkPrgrm getKleeneProgram(){
+    PnkPrgrm ret;
+    ret.addNode(-1, SW, 2, 0.0f, false);
+    ret.addNode(0, DUP, 0, 0.0f, false);
+    // now start the Kleene repetition
+    ret.addNode(1, KLEENESTART, 0, 0.0f, false);
+    ret.addNode(2, SW, 0, 0.0f, false);
+    ret.addNode(3, DUP, 0, 0.0f, false);
+    ret.addNode(4, SW, 1, 0.0f, false);
+    ret.addNode(5, DUP, 0, 0.0f, false);
+    ret.addNode(6, SW, 2, 0.0f, false);
+    ret.addNode(7, DUP, 0, 0.0f, false);
+    ret.addNode(8, KLEENESTOP, 0, 0.0f, false);
+    return ret;
+}
+
 PnkPrgrm getCurrentProgram(){
     PnkPrgrm ret;
     int nodenr = 0;
-    ret.addNode(-1, SW, 2, 1.0f, false);
+    ret.addNode(-1, SW, 2, 0.0f, false);
     ret.addNode(0, DUP, 0, 0.0f, false);
     nodenr = ret.addNode(1, PROB, 0, 0.5, false );
     //branching left
@@ -165,6 +182,12 @@ std::string instrString(uint32_t instr){
             break;
         case PAR:
             ret = "PAR";
+        case KLEENESTART:
+            ret = "KLEENESTART";
+            break;
+        case KLEENESTOP:
+            ret = "KLEENESTOP";
+            break;
         default:
             ret = "UNKNOWN";
             break;
@@ -332,10 +355,14 @@ PnkServer::StopApplication()
     }
 }
 
+bool PnkServer::SendToNodeNr(uint32_t nodenr, Ptr<Packet> packet){
+    return m_socketMap[nodenr]->Send(packet);
+}
+
 void
 PnkServer::HandleRead(Ptr<Socket> socket)
 {
-    PnkPrgrm curprog = getCurrentProgram();
+    PnkPrgrm curprog = getKleeneProgram();
     const uint32_t thisNetworkNodeNumber = GetNode()->GetId();
     std::cout << "HandleRead called for nodeid " << thisNetworkNodeNumber << std::endl;
     NS_LOG_FUNCTION(this << socket);
@@ -356,15 +383,11 @@ PnkServer::HandleRead(Ptr<Socket> socket)
 
         */
 
-        // we moeten weten welke socket, denk ik.        
-
         if (packet->GetSize() > 0)
         {
             uint32_t receivedSize = packet->GetSize();
             SeqTsHeader seqTs;
             uint32_t currentSequenceNumber = 0;
-            // packet->RemoveHeader(seqTs);
-            // uint32_t currentSequenceNumber = seqTs.GetSeq();
 
             PnkHeader pnkhead;
             packet->RemoveHeader(pnkhead);
@@ -415,13 +438,13 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                         pnkhead.SetCur(nextnodenr);
                         packet_copy->AddHeader(pnkhead);
 
-                        if (m_socketMap[pnkhead.GetSwitch()]->Send(packet_copy)) {
+                        if (SendToNodeNr(pnkhead.GetSwitch(), packet_copy)) {
                             std::cout << "Sending to node " << pnkhead.GetSwitch() << ", ip " << m_nodeAddressMap[pnkhead.GetSwitch()] << std::endl;
                         } else {
                             std::cout << "Sending to " << m_nodeAddressMap[pnkhead.GetSwitch()] << " failed" << std::endl;
                         }
                         done = true;
-                        break;
+                        return;
                     }
                     case DROP: {
                         std::cout << "DROP" << std::endl;
@@ -449,10 +472,19 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                         // if that happens, we need to check the pnk header for previous parallel branches
                         // and revert to that state. that means also reverting the flow of the program
                         // and sending packets back. mhm
+                        // actually no, we need to record the state of the packet at the time of branching
+                        // and the node at which we branched... and then we can just send the packet back?
                         break;
                     }
                     case TESTSW: {
-                        std::cout << "TEST SW" << pnkhead.GetSwitch() << " == " << arg << " ?" << std::endl;
+
+                        // TODO, test against the current node number instead of the header value..?
+                        // actually..
+                        // if we are in switch 2
+                        // sw <- 1; sw = 2; dup
+                        // should be dropped, right? so maybe we should not check for the node number
+
+                        std::cout << "TEST SW(" << pnkhead.GetSwitch() << ") == " << arg << "?" << std::endl;
                         if (arg == pnkhead.GetSwitch()){
                             std::cout << "True" << std::endl;
                             // do nothing
@@ -463,10 +495,15 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                             done = true;
                             return;
                         }
+                        break;
                         // break;
                     }
                     case TESTPT: {
-                        std::cout << "TEST PT(" << pnkhead.GetPort() << ") == " << arg << " ?" << std::endl;
+
+                        // TODO, test for port of this node? discussion at TESTSW
+                        // probably should not do that for ports, but probably SHOULD for switches
+
+                        std::cout << "TEST PT(" << pnkhead.GetPort() << ") == " << arg << "?" << std::endl;
                         if (arg == pnkhead.GetPort()){
                             std::cout << "True" << std::endl;
                             // do nothing
@@ -477,10 +514,41 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                             done = true;
                             return;
                         }
+                        break;
                         // break;
                     }
                     case SKIP: {
                         std::cout << "SKIP" << std::endl;
+                        break;
+                    }
+                    case KLEENESTART: {
+                        // functionally a noop or skip
+                        std::cout << "KLEENESTART" << std::endl;
+                        break;
+                    }
+                    case KLEENESTOP: {
+                        // go back to the previous kleenestart (?)
+                        // this is quite simplistic actually, nested kleene stars would not work then...
+                        // how do we fix that?
+                        // maybe we keep track of how deep we are..?
+
+                        // this is a bit of a hack, but it works for now
+                        // we just go back to the previous kleenestart
+                        
+                        uint32_t targetnode = 0;
+
+                        PnkPrgrmNode* node = curnode;
+                        while (node->instr != KLEENESTART){
+                            node = node->prev;
+                        }
+                        targetnode = node->nodenr;
+
+                        // set the pnkhead to the correct values
+                        pnkhead.SetCur(targetnode);
+                        packet_copy->AddHeader(pnkhead);
+                        curnode = node;
+
+                        std::cout << "KLEENESTOP" << std::endl;
                         break;
                     }
                     default: {

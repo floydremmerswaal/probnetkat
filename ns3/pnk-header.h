@@ -20,6 +20,12 @@ namespace ns3  {
     uint16_t GetPort(void);
     void SetCur(uint16_t cur);
     uint16_t GetCur(void);
+    
+    uint16_t PopBranch(void);
+    void PushBranch(uint16_t branch);
+    uint16_t GetBranchCount(void);
+    bool ContainsBranch(void);
+
 
     // new method needed
     static TypeId GetTypeId (void);
@@ -29,11 +35,14 @@ namespace ns3  {
     uint32_t GetSerializedSize() const override;
     void Serialize(Buffer::Iterator start) const override;
     uint32_t Deserialize(Buffer::Iterator start) override;
+
     private:
     uint16_t m_data;
     uint16_t m_sw;
     uint16_t m_pt;
     uint16_t m_cur;
+    uint16_t m_branches[64];
+    uint16_t m_branchcount;
     
     };
 

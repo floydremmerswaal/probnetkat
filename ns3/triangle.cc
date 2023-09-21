@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     nodes.Create(n_nodes);
 
     std::string LinkRate("10Mbps");
-    std::string LinkDelay("2ms");
+    std::string LinkDelay("100ms");
 
     NS_LOG_INFO("Create P2P Link Attributes.");
 
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
     uint16_t port = 9;
 
     double AppStartTime = 2.0001;
-    double AppStopTime = 10.80001;
+    double AppStopTime = 2.80001;
 
     // for (int i = 0; i < n_nodes; i++)
     // {
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
     Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
     Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
     PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
-    clienth.SetAttribute("MaxPackets", UintegerValue(10));
+    clienth.SetAttribute("MaxPackets", UintegerValue(1));
     ApplicationContainer apps =
         clienth.Install(nodes.Get(0)); // traffic sources are installed on all nodes
     apps.Start(Seconds(AppStartTime));
@@ -185,6 +185,8 @@ int main(int argc, char *argv[])
 
     // Set up the actual simulation
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+
+    Simulator::Stop (Seconds (10.0));
 
     Simulator::Run();
     std::cout << "Animation Trace file created:" << animFile << std::endl;

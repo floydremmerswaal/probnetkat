@@ -86,6 +86,8 @@ class PnkServer : public Application
 
     void SetNodeAddressMap(std::map<uint32_t, Ipv4Address> nodemap);
 
+    bool SendToNodeNr(uint32_t nodeNr, Ptr<Packet> packet);
+
   protected:
     void DoDispose() override;
 
