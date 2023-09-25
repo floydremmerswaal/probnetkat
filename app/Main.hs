@@ -23,8 +23,6 @@ import Syntax.ErrM
 
 type ParseFun a = [Token] -> Err a
 
-myLLexer = myLexer
-
 type Verbosity = Int
 
 
@@ -128,6 +126,33 @@ testF fs = do
       prettyPrint samples
 
 
+-- -- create list of tokens from file
+-- fileToExp :: String -> Exp
+-- fileToExp s = do 
+--     let ts = myLexer s
+--     case pExp ts of
+--       Left _ -> do
+--         ESkip -- default to the skip expression if we error out. could be done better but oh well
+--       Right tree -> do
+--         tree
+
+outputCppInstr :: Int -> Int -> Exp -> String
+outputCppInstr i j (EAssSw n) = "int instr" ++ show i ++ " = addNode(SW, " ++ show n ++ ", " ++ show j ++ ");"
+outputCppInstr i j (EAssPt n) = "int instr" ++ show i ++ " = addNode(PT, " ++ show n ++ ", " ++ show j ++ ");"
+outputCppInstr i j (ESwEq n) = "int instr" ++ show i ++ " = addNode(TESTSW, " ++ show n ++ ", " ++ show j ++ ");"
+outputCppInstr i j (EPtEq n) = "int instr" ++ show i ++ " = addNode(TESTPT, " ++ show n ++ ", " ++ show j ++ ");"
+outputCppInstr i j (ESwNEq n) = "int instr" ++ show i ++ " = addNode(TESTSW, " ++ show n ++ ", " ++ show j ++ ");"
+outputCppInstr i j (EPtNEq n) = "int instr" ++ show i ++ " = addNode(TESTPT, " ++ show n ++ ", " ++ show j ++ ");"
+outputCppInstr i j EDup = "int instr" ++ show i ++ " = addNode(DUP, 0, " ++ show j ++ ");"
+outputCppInstr i j ESkip = "int instr" ++ show i ++ " = addNode(SKIP, 0, " ++ show j ++ ");"
+outputCppInstr i j EDrop = "int instr" ++ show i ++ " = addNode(DROP, 0, " ++ show j ++ ");"
+outputCppInstr i j (ESeq e1 e2) =  outputCppInstr i (j+1) e1 ++ "\n" ++ outputCppInstr (j+1) j e2
+outputCppInstr _ _ (EprobD _ _) = "might be deleted"
+outputCppInstr i j (EProb e1 d e2) = outputCppInstr i (j+1) e1 ++ "\n" ++ outputCppInstr (j+1) j e2
+outputCppInstr i j (Epar e1 e2) = outputCppInstr i (j+1) e1 ++ "\n" ++ outputCppInstr (j+1) j e2
+outputCppInstr i j (EKleene e1) = outputCppInstr i (j+1) e1 ++ "\n" ++ outputCppInstr (j+1) j e1
+
+
 -- we want to create a function that takes a program and outputs c++ code
 -- the program should be turned into a finite automaton
 createAutomaton :: [String] -> IO ()
@@ -142,4 +167,7 @@ createAutomaton content = do
       exitFailure
     Right tree -> do
       putStrLn "\nParse Successful!"
-      print tree
+      showTree 2 tree
+      -- traverse the tree and print the c++ code
+      putStrLn "C++ code:"
+      putStrLn $ outputCppInstr tree
