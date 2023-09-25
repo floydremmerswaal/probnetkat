@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     const int n_nodes = 3; 
 
     std::string animFile = "pnk-animation.xml"; // Name of file for animation output
-    const int initial_packet_destinations[] = {0,1,2};
+    const int initial_packet_destinations[] = {0,1,0};
     const int intital_packet_number = 3;
     const bool use_time_list = true;    // use the list of times to send the packets
                                         // or set the time between packets
@@ -136,11 +136,22 @@ int main(int argc, char *argv[])
     // add master node to send initial packets (network ingress)
     // we place the master node at the end so that the other nodes numbers dont get shifted (and we start at 0)
     // this master node is connected to all other nodes
+    // thought: we only have to connect it to the list of initial packet destinations
+    // this might be a premature optimization: we can just connect it to all nodes and it will work fine
+    // also, that might make it more flexible (needing just a config change instead of a recompile)
+
+    bool master_node_connections[n_nodes] = {false};
+    for (int i = 0; i < intital_packet_number; i++){
+        master_node_connections[initial_packet_destinations[i]] = true;
+    }
+
     for (size_t i = 0; i < Adj_Matrix.size(); i++){
-        NodeContainer n_links = NodeContainer(masternode, nodes.Get(i));
-        NetDeviceContainer n_devs = p2p.Install(n_links);
-        ipv4_n.Assign(n_devs);
-        ipv4_n.NewNetwork();
+        if (master_node_connections[i]){
+            NodeContainer n_links = NodeContainer(masternode, nodes.Get(i));
+            NetDeviceContainer n_devs = p2p.Install(n_links);
+            ipv4_n.Assign(n_devs);
+            ipv4_n.NewNetwork();
+        }
     }
 
     // define the mobility/location of the nodes
