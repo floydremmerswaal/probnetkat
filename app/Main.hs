@@ -83,6 +83,7 @@ usage = do
     , "  --test (files)      Run test on content of files."
     , "  (files)         Parse content of files verbosely."
     , "  -s (files)      Silent mode. Parse content of files silently."
+    , "  --auto (files)    Create automaton from file."
     ]
 
 main :: IO ()
@@ -93,7 +94,9 @@ main = do
     []         -> getContents >>= run 2 pExp
     "-s":fs    -> mapM_ (runFile 0 pExp) fs
     "--test":fs  -> testF fs
+    "--auto":fs -> createAutomaton fs
     fs         -> mapM_ (runFileAndIO 2 pExp) fs
+
 
 prettyPrint :: [(SH, Double)] -> IO ()
 prettyPrint [] = return ()
@@ -123,3 +126,20 @@ testF fs = do
       let samples = enumerator result
       putStrLn "Function output:"
       prettyPrint samples
+
+
+-- we want to create a function that takes a program and outputs c++ code
+-- the program should be turned into a finite automaton
+createAutomaton :: [String] -> IO ()
+createAutomaton content = do
+  putStrLn "createAutomaton"
+  s <- readFile (head content)
+  let ts = myLexer s
+  case pExp ts of
+    Left err -> do
+      putStrLn "\nParse Failed...\n"
+      putStrLn err
+      exitFailure
+    Right tree -> do
+      putStrLn "\nParse Successful!"
+      print tree
