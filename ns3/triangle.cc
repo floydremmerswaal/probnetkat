@@ -48,6 +48,11 @@ int main(int argc, char *argv[])
     std::string animFile = "pnk-animation.xml"; // Name of file for animation output
     const int initial_packet_destinations[] = {0,1,2};
     const int intital_packet_number = 3;
+    const bool use_time_list = true;    // use the list of times to send the packets
+                                        // or set the time between packets
+
+    const double initial_packet_times[] = {2.0, 2.5, 3.0};
+
     const int initial_packet_time = 2;
     const double time_between_packets = 0.5;
 
@@ -190,10 +195,11 @@ int main(int argc, char *argv[])
         Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
         PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
         clienth.SetAttribute("MaxPackets", UintegerValue(1));
+        double time = use_time_list ? initial_packet_times[i] : initial_packet_time + i * time_between_packets;
         ApplicationContainer apps =
             clienth.Install(masternode);
-        apps.Start(Seconds(initial_packet_time + i * time_between_packets));
-        apps.Stop(Seconds(initial_packet_time + i * time_between_packets + 0.0001));
+        apps.Start(Seconds(time));
+        apps.Stop(Seconds(time+ 0.0001));
     }
 
     
