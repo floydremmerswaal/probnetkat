@@ -35,6 +35,24 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("TriangleTest");
 
+
+// create a full adjacency matrix (all nodes are connected to all other nodes)
+std::vector<std::vector<bool>> getAdj_MatrixFull(int n){
+    std::vector<std::vector<bool>> Adj_Matrix;
+    for (int i = 0; i < n; i++){
+        std::vector<bool> row;
+        for (int j = 0; j < n; j++){
+            if (i == j){
+                row.push_back(false);
+            } else {
+                row.push_back(true);
+            }
+        }
+        Adj_Matrix.push_back(row);
+    }
+    return Adj_Matrix;
+}
+
 int main(int argc, char *argv[])
 {
     CommandLine cmd(__FILE__);
@@ -45,6 +63,8 @@ int main(int argc, char *argv[])
     LogComponentEnable("PnkServer", LOG_LEVEL_INFO);
 
     // settings
+    const int n_nodes = 3; 
+
     std::string animFile = "pnk-animation.xml"; // Name of file for animation output
     const int initial_packet_destinations[] = {0,1,2};
     const int intital_packet_number = 3;
@@ -56,12 +76,10 @@ int main(int argc, char *argv[])
     const int initial_packet_time = 2;
     const double time_between_packets = 0.5;
 
-    const int n_nodes = 3; 
-
-    std::vector<std::vector<bool>> Adj_Matrix;
-    Adj_Matrix.push_back({0,1,1});
-    Adj_Matrix.push_back({1,0,1});
-    Adj_Matrix.push_back({1,1,0});
+    std::vector<std::vector<bool>> Adj_Matrix = getAdj_MatrixFull(n_nodes);
+    // Adj_Matrix.push_back({0,1,1});
+    // Adj_Matrix.push_back({1,0,1});
+    // Adj_Matrix.push_back({1,1,0});
 
 
     // create the nodes
@@ -93,7 +111,8 @@ int main(int argc, char *argv[])
 
     NS_LOG_INFO("Create Links Between Nodes.");
 
-    // create links
+    // create links, we only take the upper (right) triangle of the adjacency matrix
+    // this is because the adjacency matrix is symmetric
 
     for (size_t i = 0; i < Adj_Matrix.size(); i++)
     {
@@ -184,9 +203,6 @@ int main(int argc, char *argv[])
     NS_LOG_INFO("Setup CBR Traffic Sources.");
 
     uint16_t port = 9;
-
-    // double AppStartTime = 2.0001;
-    // double AppStopTime = 10.0000;
 
     // create the initial packets
     for (int i = 0; i < intital_packet_number; i++){
