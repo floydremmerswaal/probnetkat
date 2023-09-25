@@ -134,7 +134,7 @@ PnkPrgrm getKleeneProgram(){
     return ret;
 }
 
-PnkPrgrm getCurrentProgram(){
+PnkPrgrm getBranchingProgram(){
     PnkPrgrm ret;
     int nodenr = 0;
     ret.addNode(-1, SW, 2, 0.0f, false);
@@ -151,6 +151,12 @@ PnkPrgrm getCurrentProgram(){
     ret.addNode(right, DROP, 0, 0.0F, false);
     return ret;
 }
+
+PnkPrgrm getCurrentProgram(){
+    return getBranchingProgram();
+}
+
+
 
 std::string instrString(uint32_t instr){
     std::string ret = "";
@@ -362,7 +368,7 @@ bool PnkServer::SendToNodeNr(uint32_t nodenr, Ptr<Packet> packet){
 void
 PnkServer::HandleRead(Ptr<Socket> socket)
 {
-    PnkPrgrm curprog = getKleeneProgram();
+    PnkPrgrm curprog = getCurrentProgram();
     const uint32_t thisNetworkNodeNumber = GetNode()->GetId();
     std::cout << "HandleRead called for nodeid " << thisNetworkNodeNumber << std::endl;
     NS_LOG_FUNCTION(this << socket);

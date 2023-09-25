@@ -104,7 +104,7 @@ kleeneApprox 0 _ = skip
 kleeneApprox n p = seq (par skip p) (kleeneApprox (n-1) p)
 
 kleene :: MonadDistribution m => KSH m -> KSH m
-kleene = kleeneApprox 10
+kleene = kleeneApprox 3
 
 ----------- Other operators
 

@@ -22,6 +22,7 @@
 #include "ns3/netanim-module.h"
 #include "ns3/network-module.h"
 #include "ns3/point-to-point-module.h"
+#include "ns3/mobility-module.h"
 
 // Triangle Network Topology
 //
@@ -42,19 +43,29 @@ int main(int argc, char *argv[])
     Time::SetResolution(Time::NS);
     LogComponentEnable("PnkClient", LOG_LEVEL_INFO);
     LogComponentEnable("PnkServer", LOG_LEVEL_INFO);
-    // LogComponentEnable("PnkServerApplication", LOG_LEVEL_LOGIC);
 
-    // NodeContainer nodes;
-    // nodes.Create(3);
+    // settings
+    std::string animFile = "pnk-animation.xml"; // Name of file for animation output
+    const int initial_packet_destinations[] = {0,1,2};
+    const int intital_packet_number = 3;
+    const int initial_packet_time = 2;
+    const double time_between_packets = 0.5;
 
-    // MobilityHelper mobility;
-    // mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-    // mobility.Install(nodes);
+    const int n_nodes = 3; 
 
-    const int n_nodes = 3;
+    std::vector<std::vector<bool>> Adj_Matrix;
+    Adj_Matrix.push_back({0,1,1});
+    Adj_Matrix.push_back({1,0,1});
+    Adj_Matrix.push_back({1,1,0});
+
+
+    // create the nodes
 
     NodeContainer nodes; // Declare nodes objects
-    nodes.Create(n_nodes);
+    nodes.Create(n_nodes + 1); // one more for the master node
+
+    auto masternode = nodes.Get(n_nodes);
+
 
     std::string LinkRate("10Mbps");
     std::string LinkDelay("100ms");
@@ -77,13 +88,7 @@ int main(int argc, char *argv[])
 
     NS_LOG_INFO("Create Links Between Nodes.");
 
-    uint32_t linkCount = 0;
-
-    std::vector<std::vector<bool>> Adj_Matrix;
-
-    Adj_Matrix.push_back({0,1,1});
-    Adj_Matrix.push_back({1,0,1});
-    Adj_Matrix.push_back({1,1,0});
+    // create links
 
     for (size_t i = 0; i < Adj_Matrix.size(); i++)
     {
@@ -95,7 +100,6 @@ int main(int argc, char *argv[])
                 NetDeviceContainer n_devs = p2p.Install(n_links);
                 ipv4_n.Assign(n_devs);
                 ipv4_n.NewNetwork();
-                linkCount++;
                 NS_LOG_INFO("matrix element [" << i << "][" << j << "] is 1");
             }
             else
@@ -105,7 +109,56 @@ int main(int argc, char *argv[])
         }
     }
 
-    // print the ipv4 addresess of the nodes
+    // add master node to send initial packets (network ingress)
+    // we place the master node at the end so that the other nodes numbers dont get shifted (and we start at 0)
+    // this master node is connected to all other nodes
+    for (size_t i = 0; i < Adj_Matrix.size(); i++){
+        NodeContainer n_links = NodeContainer(masternode, nodes.Get(i));
+        NetDeviceContainer n_devs = p2p.Install(n_links);
+        ipv4_n.Assign(n_devs);
+        ipv4_n.NewNetwork();
+    }
+
+    // define the mobility/location of the nodes
+
+    MobilityHelper mobility_n;
+    Ptr<ListPositionAllocator> positionAlloc_n = CreateObject<ListPositionAllocator>();
+
+    for (size_t i = 0; i < n_nodes; i++)
+    {
+        // place the nodes in a circle around 55,55 with radius 45
+        double x = 55 + 45 * cos(2 * M_PI * i / n_nodes);
+        double y = 55 + 45 * sin(2 * M_PI * i / n_nodes);
+
+        positionAlloc_n->Add(Vector(x, y, 0));
+        Ptr<Node> n0 = nodes.Get(i);
+        Ptr<ConstantPositionMobilityModel> nLoc = n0->GetObject<ConstantPositionMobilityModel>();
+        if (!nLoc)
+        {
+            nLoc = CreateObject<ConstantPositionMobilityModel>();
+            n0->AggregateObject(nLoc);
+        }
+        Vector nVec(x, y, 0);
+        nLoc->SetPosition(nVec);
+    }
+
+    // place the master node at (5, 5)
+
+    positionAlloc_n->Add(Vector(5, 5, 0));
+    Ptr<Node> n0 = masternode;
+    Ptr<ConstantPositionMobilityModel> nLoc = n0->GetObject<ConstantPositionMobilityModel>();
+    if (!nLoc)
+    {
+        nLoc = CreateObject<ConstantPositionMobilityModel>();
+        n0->AggregateObject(nLoc);
+    } 
+    Vector nVec(20, 20, 0);
+    nLoc->SetPosition(nVec);
+
+    mobility_n.SetPositionAllocator(positionAlloc_n);
+    mobility_n.Install(nodes);
+
+    // determine and print the ipv4 addresess of the nodes (TODO remove the printing when needed)
 
     std::map<uint32_t, Ipv4Address> nodeAddressMap;
     for (int i = 0; i < n_nodes; i++)
@@ -120,68 +173,38 @@ int main(int argc, char *argv[])
 
     }
 
-
-    // some animation stuf
-    std::string animFile = "pnk-animation.xml"; // Name of file for animation output
-
     PnkServerHelper serverHelp(9);
-
-    
-
     ApplicationContainer serverApps = serverHelp.Install(nodes, nodeAddressMap);
 
     NS_LOG_INFO("Setup CBR Traffic Sources.");
 
     uint16_t port = 9;
 
-    double AppStartTime = 2.0001;
-    double AppStopTime = 2.80001;
+    // double AppStartTime = 2.0001;
+    // double AppStopTime = 10.0000;
 
-    // for (int i = 0; i < n_nodes; i++)
-    // {
-    //     for (int j = 0; j < n_nodes; j++)
-    //     {
-    //         if (i != j)
-    //         {
-    //             // We needed to generate a random number (rn) to be used to eliminate
-    //             // the artificial congestion caused by sending the packets at the
-    //             // same time. This rn is added to AppStartTime to have the sources
-    //             // start at different time, however they will still send at the same rate.
+    // create the initial packets
+    for (int i = 0; i < intital_packet_number; i++){
+        Ptr<Ipv4> ipv4 = nodes.Get(initial_packet_destinations[i])->GetObject<Ipv4>();
+        Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
+        Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
+        PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
+        clienth.SetAttribute("MaxPackets", UintegerValue(1));
+        ApplicationContainer apps =
+            clienth.Install(masternode);
+        apps.Start(Seconds(initial_packet_time + i * time_between_packets));
+        apps.Stop(Seconds(initial_packet_time + i * time_between_packets + 0.0001));
+    }
 
-    //             // Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable>();
-    //             // x->SetAttribute("Min", DoubleValue(0));
-    //             // x->SetAttribute("Max", DoubleValue(1));
-    //             // double rn = x->GetValue();
-    //             Ptr<Node> n = nodes.Get(j);
-    //             Ptr<Ipv4> ipv4 = n->GetObject<Ipv4>();
-    //             Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
-    //             Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
-    //             PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
-    //             clienth.SetAttribute("MaxPackets", UintegerValue(1));
-    //             ApplicationContainer apps =
-    //                 clienth.Install(nodes.Get(i)); // traffic sources are installed on all nodes
-    //             apps.Start(Seconds(AppStartTime+(3* i)+j));
-    //             apps.Stop(Seconds(AppStopTime));
-    //         }
-    //     }
-    // }
-
-    Ptr<Node> n = nodes.Get(1);
-    Ptr<Ipv4> ipv4 = n->GetObject<Ipv4>();
-    Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
-    Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
-    PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
-    clienth.SetAttribute("MaxPackets", UintegerValue(1));
-    ApplicationContainer apps =
-        clienth.Install(nodes.Get(0)); // traffic sources are installed on all nodes
-    apps.Start(Seconds(AppStartTime));
-    apps.Stop(Seconds(AppStopTime));
+    
         
 
     // Create the animation object and configure for specified output
     AnimationInterface anim(animFile);
     anim.EnablePacketMetadata();                                // Optional
     anim.EnableIpv4L3ProtocolCounters(Seconds(0), Seconds(10)); // Optional
+    
+    
 
     // Set up the actual simulation
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
