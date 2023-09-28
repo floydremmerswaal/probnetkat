@@ -50,7 +50,7 @@
 #define KLEENESTART 9
 #define KLEENESTOP 10
 
-struct PnkPrgrmNode {
+class PnkPrgrmNode {
     uint32_t instr;
     uint32_t arg;
     double farg;
@@ -59,6 +59,16 @@ struct PnkPrgrmNode {
     PnkPrgrmNode* prev;
     int nodenr; // so the node knows its own number
 };
+
+PnkPrgrmNode::PnkPrgrmNode(){
+    instr = 0;
+    arg = 0;
+    farg = 0.0f;
+    next1 = nullptr;
+    next2 = nullptr;
+    prev = nullptr;
+    nodenr = -1;
+}
 
 class PnkPrgrm {
     public:
@@ -91,23 +101,21 @@ PnkPrgrm::~PnkPrgrm(){
     return;
 }
 
-int PnkPrgrm::addNode(int parentnodenr, uint32_t instr, uint32_t arg, double farg, bool isnext2){
+int PnkPrgrm::addNode(int parentnodenr, uint32_t instr, uint32_t arg, double farg){
     PnkPrgrmNode* newnode = new PnkPrgrmNode();
     newnode->instr = instr;
     newnode->arg = arg;
     newnode->farg = farg;
-    newnode->next1 = nullptr;
-    newnode->next2 = nullptr;
     
-    if (parentnodenr == -1){
+    if (nodeCount == 0){
         newnode->nodenr = 0;
         start = newnode;
         nodeNrToNode[0] = start; 
     } else {
         PnkPrgrmNode* node = nodeNrToNode[parentnodenr];
-        if (!isnext2){
+        if (node->next1 == nullptr){ // if next1 is null, we are adding the left path
             node->next1 = newnode;
-        } else {
+        } else {                    // otherwise, we are adding the right path
             node->next2 = newnode;
         }
         newnode->prev = node;

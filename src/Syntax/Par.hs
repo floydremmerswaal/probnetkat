@@ -259,7 +259,7 @@ happyReduction_15 happy_x_3
 	 =  case happyOut8 happy_x_1 of { (HappyWrap8 happy_var_1) -> 
 	case happyOut7 happy_x_3 of { (HappyWrap7 happy_var_3) -> 
 	happyIn8
-		 (Syntax.Abs.EprobD happy_var_1 happy_var_3
+		 (Syntax.Abs.EProbD happy_var_1 happy_var_3
 	)}}
 
 happyReduce_16 = happyReduce 5# 4# happyReduction_16
@@ -290,7 +290,7 @@ happyReduction_18 happy_x_3
 	 =  case happyOut9 happy_x_1 of { (HappyWrap9 happy_var_1) -> 
 	case happyOut8 happy_x_3 of { (HappyWrap8 happy_var_3) -> 
 	happyIn9
-		 (Syntax.Abs.Epar happy_var_1 happy_var_3
+		 (Syntax.Abs.EPar happy_var_1 happy_var_3
 	)}}
 
 happyReduce_19 = happySpecReduce_2  5# happyReduction_19

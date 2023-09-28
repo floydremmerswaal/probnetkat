@@ -68,13 +68,13 @@ Exp2 : Exp2 ';' Exp3 { Syntax.Abs.ESeq $1 $3 } | Exp3 { $1 }
 
 Exp1 :: { Syntax.Abs.Exp }
 Exp1
-  : Exp1 '+' Exp2 { Syntax.Abs.EprobD $1 $3 }
+  : Exp1 '+' Exp2 { Syntax.Abs.EProbD $1 $3 }
   | Exp1 '+[' Double ']' Exp2 { Syntax.Abs.EProb $1 $3 $5 }
   | Exp2 { $1 }
 
 Exp :: { Syntax.Abs.Exp }
 Exp
-  : Exp '&' Exp1 { Syntax.Abs.Epar $1 $3 }
+  : Exp '&' Exp1 { Syntax.Abs.EPar $1 $3 }
   | Exp '*' { Syntax.Abs.EKleene $1 }
   | Exp1 { $1 }
 

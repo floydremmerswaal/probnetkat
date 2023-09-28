@@ -11,9 +11,9 @@ ESkip. Exp3 ::= "skip";
 EDrop. Exp3 ::= "drop";
 
 ESeq. Exp2 ::= Exp2 ";" Exp3;
-EprobD. Exp1 ::= Exp1 "+" Exp2;
+EProbD. Exp1 ::= Exp1 "+" Exp2;
 EProb. Exp1 ::= Exp1 "+[" Double "]" Exp2;
-Epar. Exp ::= Exp "&" Exp1;
+EPar. Exp ::= Exp "&" Exp1;
 
 EKleene. Exp ::= Exp "*";
 
