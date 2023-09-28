@@ -128,61 +128,100 @@ testF fs = do
       putStrLn "Function output:"
       prettyPrint samples
 
-dfsInit :: Exp -> IO Int
-dfsInit = dfsExp 0 0
+-- dfsInit :: Exp -> IO Int
+-- dfsInit = dfsExp 0 0
 
-dfsExp :: Int -> Int ->  Exp -> IO Int
-dfsExp nodenr parentnr expression = do
-  -- putStrLn $ show i 
-  case expression of
-    EAssSw arg -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  SW, " ++ show arg ++ ", 0.0);"
-      return nodenr
-    EAssPt arg -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PT, " ++ show arg ++ ", 0.0);"
-      return nodenr
-    ESwEq arg -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTSW, " ++ show arg ++ ", 0.0);"
-      return nodenr
-    EPtEq arg -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTPT, " ++ show arg ++ ", 0.0);"
-      return nodenr
-    ESwNEq arg -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTSWNEG, " ++ show arg ++ ", 0.0);"
-      return nodenr
-    EPtNEq arg -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTPTNEG, " ++ show arg ++ ", 0.0);"
-      return nodenr
-    EDup -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  DUP, 0, 0.0);"
-      return nodenr
-    ESkip -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  SKIP, 0, 0.0);"
-      return nodenr
-    EDrop -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  DROP, 0, 0.0);"
-      return nodenr
-    ESeq e1 e2 -> do
-      leftmax <- dfsExp nodenr parentnr e1
-      dfsExp (leftmax + 1) leftmax e2
-    EProbD e1 e2 -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PROB, 0, 0.5);"
-      leftmax <- dfsExp (nodenr + 1) nodenr  e1
-      dfsExp (leftmax + 1) nodenr e2
-    EProb e1 d e2 -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PROB, 0, " ++ show d ++ ");"
-      leftmax <- dfsExp (nodenr + 1) nodenr  e1
-      dfsExp (leftmax + 1) nodenr e2
-    EPar e1 e2 -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PAR, 0, 0.0);"
-      leftmax <- dfsExp (nodenr + 1) nodenr  e1
-      dfsExp (leftmax + 1) nodenr e2
-    EKleene e1 -> do
-      putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  KLEENESTART, 0, 0.0);"
-      childmax <- dfsExp (nodenr + 1) nodenr e1
-      putStrLn $ "int node" ++ show (childmax + 1) ++ " = addNode(" ++ show parentnr ++ ",  KLEENESTOP, 0, 0.0);"
-      return (childmax + 1)
+-- dfsExp :: Int -> Int ->  Exp -> IO Int
+-- dfsExp nodenr parentnr expression = do
+--   -- putStrLn $ show i 
+--   case expression of
+--     EAssSw arg -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  SW, " ++ show arg ++ ", 0.0);"
+--       return nodenr
+--     EAssPt arg -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PT, " ++ show arg ++ ", 0.0);"
+--       return nodenr
+--     ESwEq arg -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTSW, " ++ show arg ++ ", 0.0);"
+--       return nodenr
+--     EPtEq arg -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTPT, " ++ show arg ++ ", 0.0);"
+--       return nodenr
+--     ESwNEq arg -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTSWNEG, " ++ show arg ++ ", 0.0);"
+--       return nodenr
+--     EPtNEq arg -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTPTNEG, " ++ show arg ++ ", 0.0);"
+--       return nodenr
+--     EDup -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  DUP, 0, 0.0);"
+--       return nodenr
+--     ESkip -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  SKIP, 0, 0.0);"
+--       return nodenr
+--     EDrop -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  DROP, 0, 0.0);"
+--       return nodenr
+--     ESeq e1 e2 -> do
+--       leftmax <- dfsExp nodenr parentnr e1
+--       dfsExp (leftmax + 1) leftmax e2
+--     EProbD e1 e2 -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PROB, 0, 0.5);"
+--       leftmax <- dfsExp (nodenr + 1) nodenr  e1
+--       dfsExp (leftmax + 1) nodenr e2
+--     EProb e1 d e2 -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PROB, 0, " ++ show d ++ ");"
+--       leftmax <- dfsExp (nodenr + 1) nodenr  e1
+--       dfsExp (leftmax + 1) nodenr e2
+--     EPar e1 e2 -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PAR, 0, 0.0);"
+--       leftmax <- dfsExp (nodenr + 1) nodenr  e1
+--       dfsExp (leftmax + 1) nodenr e2
+--     EKleene e1 -> do
+--       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  KLEENESTART, 0, 0.0);"
+--       childmax <- dfsExp (nodenr + 1) nodenr e1
+--       putStrLn $ "int node" ++ show (childmax + 1) ++ " = addNode(" ++ show parentnr ++ ",  KLEENESTOP, 0, 0.0);"
+--       return (childmax + 1)
 
+data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip | KleeneStart | KleeneStop
+type InstNode = (Inst, Double)
+
+
+instrToCpp :: Int -> Int -> InstNode -> IO ()
+instrToCpp nodenr parentnr instrnode = do
+  case instrnode of
+    (AssSw, arg) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  SW, " ++ show arg ++ ", 0.0);"
+    (AssPt, arg) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PT, " ++ show arg ++ ", 0.0);"
+    (TestSw, arg) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTSW, " ++ show arg ++ ", 0.0);"
+    (TestPt, arg) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTPT, " ++ show arg ++ ", 0.0);"
+    (Dup, _) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  DUP, 0, 0.0);"
+    (Par, _) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PAR, 0, 0.0);"
+    (Prob, arg) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PROB, 0, " ++ show arg ++ ");"
+    (Drop, _) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  DROP, 0, 0.0);"
+    (Skip, _) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  SKIP, 0, 0.0);"
+    (KleeneStart, _) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  KLEENESTART, 0, 0.0);"
+    (KleeneStop, _) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  KLEENESTOP, 0, 0.0);"
+
+
+--dfsExp but for Tree InstNode
+dfsTreeToCpp :: Int -> Int ->  Tree InstNode -> IO Int
+dfsTreeToCpp nodenr parentnr treenode = do 
+  case treenode of 
+    Node (x, y) [] -> do 
+      instrToCpp nodenr parentnr (x, y)
+      return nodenr
+    Node (x, y) [leftTree] -> do
+      leftmax <- dfsTreeToCpp (nodenr + 1) parentnr leftTree
+      instrToCpp (leftmax + 1) nodenr (x, y)
+      return nodenr
+    Node (x, y) (leftTree:rightTree) -> do
+      leftmax <- dfsTreeToCpp nodenr parentnr leftTree
+      rightmax <- dfsTreeToCpp (leftmax + 1) nodenr (head rightTree)
+      instrToCpp (rightmax + 1) nodenr (x, y)
+      return nodenr
+
+getCpp :: Tree InstNode -> IO Int
+getCpp = dfsTreeToCpp 0 0
 
 -- we want to create a function that takes a program and outputs c++ code
 -- the program should be turned into a finite automaton
@@ -201,12 +240,10 @@ createAutomaton content = do
       showTree 2 tree
       -- traverse the tree and print the c++ code
       putStrLn "DFS:"
-      _ <- dfsInit tree
+      _ <- getCpp (expToTree tree)
       putStrLn "done"
 
 
-data Inst = Ass | Pt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip | KleeneStart | KleeneStop
-type InstNode = (Inst, Double)
 
 
 appendToLeaves :: Tree InstNode -> Tree InstNode -> Tree InstNode
@@ -223,34 +260,34 @@ appendToLeaves (Node (x,y) (leftTree:rightTree)) someSubTree = do
 
 -- we take in a program, and return a tree of nodes
 expToTree :: Exp -> Tree InstNode 
-expToTree expression = do
+expToTree expression =
   case expression of
-    EAssPt arg -> Node (Pt, fromInteger arg) []
-    EAssSw arg -> Node (Ass, fromInteger arg) []
+    EAssPt arg -> Node (AssPt, fromInteger arg) []
+    EAssSw arg -> Node (AssSw, fromInteger arg) []
     ESwEq arg -> Node (TestSw, fromInteger arg) []
     EPtEq arg -> Node (TestPt, fromInteger arg) []    
-    ESwNEq arg -> Node (TestSw,fromInteger arg) [] -- negation not yet implemented!! TODO decide if we should remove or not
+    ESwNEq arg -> Node (TestSw, fromInteger arg) []
     EPtNEq arg -> Node (TestPt, fromInteger arg) []
     EDup -> Node (Dup, 0) []
     ESkip -> Node (Skip, 0) []
     EDrop -> Node (Drop, 0) []
-    ESeq e1 e2 -> do
-      leftTree <- expToTree e1
-      rightTree <- expToTree e2
-      return $ appendToLeaves leftTree rightTree
-    EProb e1 d e2 -> do
-      leftTree <- expToTree e1
-      rightTree <- expToTree e2
-      Node (Prob, d) [leftTree, rightTree] 
-    EProbD e1 e2 -> do
-      leftTree <- expToTree e1
-      rightTree <- expToTree e2
-      Node (Prob, 0.5) [leftTree, rightTree] 
-    EPar e1 e2 -> do
-      leftTree <- expToTree e1
-      rightTree <- expToTree e2
-      Node (Par, 0) [leftTree, rightTree]
-    EKleene e1 -> do
-      childTree <- expToTree e1
-      fixedChildTree <- appendToLeaves childTree (Node (KleeneStop, 0) []) 
-      Node (KleeneStart, 0) [fixedChildTree]
+    ESeq e1 e2 ->
+      let leftTree = expToTree e1
+          rightTree = expToTree e2
+      in appendToLeaves leftTree rightTree
+    EProb e1 d e2 ->
+      let leftTree = expToTree e1
+          rightTree = expToTree e2
+      in Node (Prob, d) [leftTree, rightTree] 
+    EProbD e1 e2 ->
+      let leftTree = expToTree e1
+          rightTree = expToTree e2
+      in Node (Prob, 0.5) [leftTree, rightTree] 
+    EPar e1 e2 ->
+      let leftTree = expToTree e1
+          rightTree = expToTree e2
+      in Node (Par, 0) [leftTree, rightTree]
+    EKleene e1 ->
+      let childTree = expToTree e1
+          fixedChildTree = appendToLeaves childTree (Node (KleeneStop, 0) []) 
+      in Node (KleeneStart, 0) [fixedChildTree]
