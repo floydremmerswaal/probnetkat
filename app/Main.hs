@@ -23,6 +23,7 @@ import Syntax.ErrM
 import Text.Read.Lex (Number)
 
 import Data.Tree
+import Data.Tree.Pretty
 
 type ParseFun a = [Token] -> Err a
 
@@ -183,7 +184,7 @@ testF fs = do
 --       putStrLn $ "int node" ++ show (childmax + 1) ++ " = addNode(" ++ show parentnr ++ ",  KLEENESTOP, 0, 0.0);"
 --       return (childmax + 1)
 
-data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip | KleeneStart | KleeneStop
+data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip | KleeneStart | KleeneStop deriving Show
 type InstNode = (Inst, Double)
 
 
@@ -203,25 +204,37 @@ instrToCpp nodenr parentnr instrnode = do
     (KleeneStop, _) -> putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  KLEENESTOP, 0, 0.0);"
 
 
+printAutomaton :: Tree InstNode -> IO ()
+printAutomaton = putStrLn . drawVerticalTree . transferInstTreeToStringTree
+
+transferInstTreeToStringTree :: Tree InstNode -> Tree String
+transferInstTreeToStringTree (Node (x, y) []) = Node (show x ++ " " ++ show y) []
+transferInstTreeToStringTree (Node (x, y) [leftTree]) = do
+  let newLeftTree = transferInstTreeToStringTree leftTree
+  Node (show x ++ " " ++ show y) [newLeftTree]
+transferInstTreeToStringTree (Node (x, y) (leftTree:rightTree)) = do
+  let newLeftTree = transferInstTreeToStringTree leftTree
+  let newRightTree = transferInstTreeToStringTree (head rightTree)
+  Node (show x ++ " " ++ show y) [newLeftTree, newRightTree]
+
+
 --dfsExp but for Tree InstNode
 dfsTreeToCpp :: Int -> Int ->  Tree InstNode -> IO Int
 dfsTreeToCpp nodenr parentnr treenode = do 
   case treenode of 
     Node (x, y) [] -> do 
       instrToCpp nodenr parentnr (x, y)
-      return nodenr
+      return nodenr 
     Node (x, y) [leftTree] -> do
-      leftmax <- dfsTreeToCpp (nodenr + 1) parentnr leftTree
-      instrToCpp (leftmax + 1) nodenr (x, y)
-      return nodenr
+      instrToCpp nodenr parentnr (x, y)
+      dfsTreeToCpp (nodenr + 1) nodenr leftTree
     Node (x, y) (leftTree:rightTree) -> do
-      leftmax <- dfsTreeToCpp nodenr parentnr leftTree
-      rightmax <- dfsTreeToCpp (leftmax + 1) nodenr (head rightTree)
-      instrToCpp (rightmax + 1) nodenr (x, y)
-      return nodenr
+      instrToCpp nodenr parentnr (x, y)
+      leftmax <- dfsTreeToCpp (nodenr + 1) nodenr leftTree
+      dfsTreeToCpp (leftmax + 1) nodenr (head rightTree)
 
 getCpp :: Tree InstNode -> IO Int
-getCpp = dfsTreeToCpp 0 0
+getCpp = dfsTreeToCpp 0 0  
 
 -- we want to create a function that takes a program and outputs c++ code
 -- the program should be turned into a finite automaton
@@ -239,8 +252,10 @@ createAutomaton content = do
       putStrLn "\nParse Successful!\n"
       showTree 2 tree
       -- traverse the tree and print the c++ code
-      putStrLn "DFS:"
-      _ <- getCpp (expToTree tree)
+      putStrLn "Tree:"
+      printAutomaton $ expToTree tree
+      putStrLn "C++ code:"
+      getCpp (expToTree tree)
       putStrLn "done"
 
 

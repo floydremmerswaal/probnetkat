@@ -29,6 +29,7 @@ dependencies:
   - containers >= 0.6.5.1
   - array
   - containers
+  - pretty-tree
 
 ghc-options:
   - -Wall
