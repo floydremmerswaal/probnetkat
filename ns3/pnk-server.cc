@@ -20,6 +20,8 @@
 
 #include "pnk-server.h"
 
+#include "ns3/core-module.h"
+
 #include "ns3/packet-loss-counter.h"
 #include "ns3/seq-ts-header.h"
 
@@ -50,13 +52,12 @@
 #define KLEENESTART 9
 #define KLEENESTOP 10
 
-class PnkPrgrmNode {
+class PnkPrgrmNode : public ns3::SimpleRefCount<PnkPrgrmNode> {
     uint32_t instr;
     uint32_t arg;
     double farg;
-    PnkPrgrmNode* next1; // no branching: next1
-    PnkPrgrmNode* next2; // used for branching
-    PnkPrgrmNode* prev;
+    std::vector<ns3::Ptr<PnkPrgrmNode>> next;
+    std::vector<ns3::Ptr<PnkPrgrmNode>> prev;
     int nodenr; // so the node knows its own number
 };
 
@@ -64,9 +65,6 @@ PnkPrgrmNode::PnkPrgrmNode(){
     instr = 0;
     arg = 0;
     farg = 0.0f;
-    next1 = nullptr;
-    next2 = nullptr;
-    prev = nullptr;
     nodenr = -1;
 }
 
@@ -75,11 +73,12 @@ class PnkPrgrm {
         PnkPrgrm();
         ~PnkPrgrm();
         int addNode(int nodenr, uint32_t instr, uint32_t arg, double farg, bool nextis1);
-        PnkPrgrmNode* getNode(uint32_t nodenr);
+        void addLink(int from, int to);
+        ns3::Ptr<PnkPrgrmNode> getNode(uint32_t nodenr);
 
     private:
-        PnkPrgrmNode* start;
-        std::map<uint32_t, PnkPrgrmNode*> nodeNrToNode;
+        ns3::Ptr<PnkPrgrmNode> start;
+        std::map<uint32_t, ns3::Ptr<PnkPrgrmNode>> nodeNrToNode;
         uint32_t nodeCount;
 };
 
@@ -88,7 +87,7 @@ PnkPrgrm::PnkPrgrm(){
     return;
 }
 
-PnkPrgrmNode* PnkPrgrm::getNode(uint32_t nodenr){
+ns3::Ptr<PnkPrgrmNode> PnkPrgrm::getNode(uint32_t nodenr){
     if (nodeNrToNode.count(nodenr) > 0)
         return nodeNrToNode[nodenr];
     return nullptr;
@@ -101,8 +100,22 @@ PnkPrgrm::~PnkPrgrm(){
     return;
 }
 
+// create a link from node from to node to
+int PnkPrgrm::addLink(int from, int to){
+    ns3::Ptr<PnkPrgrmNode> fromnode = getNode(from);
+    ns3::Ptr<PnkPrgrmNode> tonode = getNode(to);
+
+    if (fromnode == nullptr || tonode == nullptr){
+        return -1;
+    }
+    fromnode->next.push_back(tonode);
+    tonode->prev.push_back(fromnode);
+
+    return 0;
+}
+
 int PnkPrgrm::addNode(int parentnodenr, uint32_t instr, uint32_t arg, double farg){
-    PnkPrgrmNode* newnode = new PnkPrgrmNode();
+    ns3::Ptr<PnkPrgrmNode> newnode = CreateObject<PnkPrgrmNode>();
     newnode->instr = instr;
     newnode->arg = arg;
     newnode->farg = farg;
@@ -112,13 +125,10 @@ int PnkPrgrm::addNode(int parentnodenr, uint32_t instr, uint32_t arg, double far
         start = newnode;
         nodeNrToNode[0] = start; 
     } else {
-        PnkPrgrmNode* node = nodeNrToNode[parentnodenr];
-        if (node->next1 == nullptr){ // if next1 is null, we are adding the left path
-            node->next1 = newnode;
-        } else {                    // otherwise, we are adding the right path
-            node->next2 = newnode;
-        }
-        newnode->prev = node;
+        ns3::Ptr<PnkPrgrmNode> node = nodeNrToNode[parentnodenr];
+        node->next.push_back(newnode);
+
+        newnode->prev.push_back(node);
         newnode->nodenr = nodeCount;
         nodeNrToNode[nodeCount] = newnode;
     }
@@ -255,6 +265,7 @@ PnkServer::PnkServer()
     m_received = 0;
     m_nodeAddressMap = {};
     m_socketMap = {};
+    // TODO initialize the program, so that we do not have to construct the program every time HandleRead is called
 }
 
 PnkServer::~PnkServer()
@@ -417,7 +428,7 @@ PnkServer::HandleRead(Ptr<Socket> socket)
             bool takefirstbranch = true;
             while (!done){
                 takefirstbranch = true;
-                PnkPrgrmNode* curnode = curprog.getNode(pnkhead.GetCur());
+                Ptr<PnkPrgrmNode> curnode = curprog.getNode(pnkhead.GetCur());
                 uint32_t instr = curnode->instr;
                 uint32_t arg = curnode->arg;
                 double farg = curnode->farg;
@@ -439,8 +450,8 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                         std::cout << "DUP" << std::endl;
                         
                         int nextnodenr;
-                        if (curnode->next1 != nullptr){
-                            nextnodenr = curnode->next1->nodenr;
+                        if (curnode->next != nullptr){
+                            nextnodenr = curnode->next[0]->nodenr;
                             std::cout << "Next program node is " << nextnodenr << std::endl;
                         }
                         else {
@@ -536,6 +547,11 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                         break;
                     }
                     case KLEENESTART: {
+
+                        // Thought: if the automaton is correct there shouldnt even be kleene nodes
+                        // there would simply be a loop in the automaton
+                        
+
                         // functionally a noop or skip
                         std::cout << "KLEENESTART" << std::endl;
                         break;
@@ -548,12 +564,12 @@ PnkServer::HandleRead(Ptr<Socket> socket)
 
                         // this is a bit of a hack, but it works for now
                         // we just go back to the previous kleenestart
-                        
+
                         uint32_t targetnode = 0;
 
-                        PnkPrgrmNode* node = curnode;
+                        Ptr<PnkPrgrmNode> node = curnode;
                         while (node->instr != KLEENESTART){
-                            node = node->prev;
+                            node = node->prev[0];
                         }
                         targetnode = node->nodenr;
 
@@ -573,10 +589,10 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                 }
                 // pc++; oh how simple it was when we just had linear programs
                 
-                if (takefirstbranch && curnode->next1 != nullptr){
-                    pnkhead.SetCur(curnode->next1->nodenr); 
-                }  else if (!takefirstbranch && curnode->next2 != nullptr) {
-                    pnkhead.SetCur(curnode->next2->nodenr);
+                if (takefirstbranch && curnode->next.size > 0){
+                    pnkhead.SetCur(curnode->next[0]->nodenr); 
+                }  else if (!takefirstbranch && curnode->next.size > 1) {
+                    pnkhead.SetCur(curnode->next[1]->nodenr);
                 } else {
                     std::cout << "ERRORRRR" << std::endl;
                     return;
