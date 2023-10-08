@@ -80,6 +80,7 @@ usage :: IO ()
 usage = do
   putStrLn $ unlines
     [ "usage: Call with one of the following argument combinations:"
+    , "  -c               Compile to C++"
     , "  --help          Display this help message."
     , "  (no arguments)  Parse stdin verbosely."
     , "  --test (files)      Run test on content of files."
@@ -97,6 +98,7 @@ main = do
     "-s":fs    -> mapM_ (runFile 0 pExp) fs
     "--test":fs  -> testF fs
     "--auto":fs -> createAutomaton fs
+    "-c":fs    -> createAutomaton fs
     fs         -> mapM_ (runFileAndIO 2 pExp) fs
 
 
@@ -129,95 +131,26 @@ testF fs = do
       putStrLn "Function output:"
       prettyPrint samples
 
--- dfsInit :: Exp -> IO Int
--- dfsInit = dfsExp 0 0
-
--- dfsExp :: Int -> Int ->  Exp -> IO Int
--- dfsExp nodenr parentnr expression = do
---   -- putStrLn $ show i 
---   case expression of
---     EAssSw arg -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  SW, " ++ show arg ++ ", 0.0);"
---       return nodenr
---     EAssPt arg -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PT, " ++ show arg ++ ", 0.0);"
---       return nodenr
---     ESwEq arg -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTSW, " ++ show arg ++ ", 0.0);"
---       return nodenr
---     EPtEq arg -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTPT, " ++ show arg ++ ", 0.0);"
---       return nodenr
---     ESwNEq arg -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTSWNEG, " ++ show arg ++ ", 0.0);"
---       return nodenr
---     EPtNEq arg -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  TESTPTNEG, " ++ show arg ++ ", 0.0);"
---       return nodenr
---     EDup -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  DUP, 0, 0.0);"
---       return nodenr
---     ESkip -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  SKIP, 0, 0.0);"
---       return nodenr
---     EDrop -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  DROP, 0, 0.0);"
---       return nodenr
---     ESeq e1 e2 -> do
---       leftmax <- dfsExp nodenr parentnr e1
---       dfsExp (leftmax + 1) leftmax e2
---     EProbD e1 e2 -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PROB, 0, 0.5);"
---       leftmax <- dfsExp (nodenr + 1) nodenr  e1
---       dfsExp (leftmax + 1) nodenr e2
---     EProb e1 d e2 -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PROB, 0, " ++ show d ++ ");"
---       leftmax <- dfsExp (nodenr + 1) nodenr  e1
---       dfsExp (leftmax + 1) nodenr e2
---     EPar e1 e2 -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  PAR, 0, 0.0);"
---       leftmax <- dfsExp (nodenr + 1) nodenr  e1
---       dfsExp (leftmax + 1) nodenr e2
---     EKleene e1 -> do
---       putStrLn $ "int node" ++ show nodenr ++ " = addNode(" ++ show parentnr ++ ",  KLEENESTART, 0, 0.0);"
---       childmax <- dfsExp (nodenr + 1) nodenr e1
---       putStrLn $ "int node" ++ show (childmax + 1) ++ " = addNode(" ++ show parentnr ++ ",  KLEENESTOP, 0, 0.0);"
---       return (childmax + 1)
-
 data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip | KleeneStart | KleeneStop deriving Show
 type InstNode = (Inst, Double)
 
+type AutomatonNode = (Inst, Double, Int, Int)
+
 
 instrToCppString :: Int -> Int -> InstNode -> String
-instrToCppString nodenr parentnr instrnode = do
+instrToCppString _ parentnr instrnode = do
   case instrnode of
-    (AssSw, arg) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  SW, " ++ show arg ++ ", 0.0);"
-    (AssPt, arg) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  PT, " ++ show arg ++ ", 0.0);"
-    (TestSw, arg) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  TESTSW, " ++ show arg ++ ", 0.0);"
-    (TestPt, arg) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  TESTPT, " ++ show arg ++ ", 0.0);"
-    (Dup, _) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  DUP, 0, 0.0);"
-    (Par, _) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  PAR, 0, 0.0);"
-    (Prob, arg) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  PROB, 0, " ++ show arg ++ ");"
-    (Drop, _) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  DROP, 0, 0.0);"
-    (Skip, _) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  SKIP, 0, 0.0);"
-    (KleeneStart, _) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  KLEENESTART, 0, 0.0);"
-    (KleeneStop, _) -> "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  KLEENESTOP, 0, 0.0);"
-
-instrToCpp :: Int -> Int -> InstNode -> IO ()
-instrToCpp nodenr parentnr instrnode = do
-  case instrnode of
-    (AssSw, arg) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  SW, " ++ show arg ++ ", 0.0);"
-    (AssPt, arg) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  PT, " ++ show arg ++ ", 0.0);"
-    (TestSw, arg) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  TESTSW, " ++ show arg ++ ", 0.0);"
-    (TestPt, arg) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  TESTPT, " ++ show arg ++ ", 0.0);"
-    (Dup, _) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  DUP, 0, 0.0);"
-    (Par, _) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  PAR, 0, 0.0);"
-    (Prob, arg) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  PROB, 0, " ++ show arg ++ ");"
-    (Drop, _) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  DROP, 0, 0.0);"
-    (Skip, _) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  SKIP, 0, 0.0);"
-    (KleeneStart, _) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  KLEENESTART, 0, 0.0);"
-    (KleeneStop, _) -> putStrLn $ "\tint node" ++ show nodenr ++ " = ret.addNode(" ++ show parentnr ++ ",  KLEENESTOP, 0, 0.0);"
-
+    (AssSw, arg) -> "\tret.addNode(" ++ show parentnr ++ ",  SW, " ++ show arg ++ ", 0.0);"
+    (AssPt, arg) -> "\tret.addNode(" ++ show parentnr ++ ",  PT, " ++ show arg ++ ", 0.0);"
+    (TestSw, arg) -> "\tret.addNode(" ++ show parentnr ++ ",  TESTSW, " ++ show arg ++ ", 0.0);"
+    (TestPt, arg) -> "\tret.addNode(" ++ show parentnr ++ ",  TESTPT, " ++ show arg ++ ", 0.0);"
+    (Dup, _) -> "\tret.addNode(" ++ show parentnr ++ ",  DUP, 0, 0.0);"
+    (Par, _) -> "\tret.addNode(" ++ show parentnr ++ ",  PAR, 0, 0.0);"
+    (Prob, arg) -> "\tret.addNode(" ++ show parentnr ++ ",  PROB, 0, " ++ show arg ++ ");"
+    (Drop, _) -> "\tret.addNode(" ++ show parentnr ++ ",  DROP, 0, 0.0);"
+    (Skip, _) -> "\tret.addNode(" ++ show parentnr ++ ",  SKIP, 0, 0.0);"
+    (KleeneStart, _) -> "\tret.addNode(" ++ show parentnr ++ ",  KLEENESTART, 0, 0.0);"
+    (KleeneStop, _) -> "\tret.addNode(" ++ show parentnr ++ ",  KLEENESTOP, 0, 0.0);"
 
 printAutomaton :: Tree InstNode -> IO ()
 printAutomaton = putStrLn . drawVerticalTree . transferInstTreeToStringTree
@@ -231,24 +164,6 @@ transferInstTreeToStringTree (Node (x, y) (leftTree:rightTree)) = do
   let newLeftTree = transferInstTreeToStringTree leftTree
   let newRightTree = transferInstTreeToStringTree (head rightTree)
   Node (show x ++ " " ++ show y) [newLeftTree, newRightTree]
-
-
-dfsTreeToCppString :: Int -> Int ->  Tree InstNode -> (Integer, String)
--- same as dfsTreeToCpp but returns a string instead of IO Int
-dfsTreeToCppString nodenr parentnr treenode = do 
-  case treenode of 
-    Node (x, y) [] -> do 
-      instrToCppString nodenr parentnr (x, y)
-    Node (x, y) [leftTree] -> do
-      instrToCppString nodenr parentnr (x, y)
-      dfsTreeToCppString (nodenr + 1) nodenr leftTree
-    Node (x, y) (leftTree:rightTree) -> do
-      instrToCppString nodenr parentnr (x, y)
-      leftmax <- dfsTreeToCppString (nodenr + 1) nodenr leftTree
-      dfsTreeToCppString (leftmax + 1) nodenr (head rightTree)
-
-getCppString :: Tree InstNode -> String
-getCppString = tail (dfsTreeToCppString 0 0)
 
 -- we want to create a function that takes a program and outputs c++ code
 -- the program should be turned into a finite automaton
@@ -271,10 +186,11 @@ createAutomaton content = do
       putStrLn "C++ code:"
       putStrLn "PnkPrgrm getAutomaton() {"
       putStrLn "\tPnkPrgrm ret;"
-      let prgrm = getCppString (expToTree tree)
-      putStrLn "\treturn ret;"
+      let prgrm = getStringFromExp tree
+      putStr prgrm
+      putStrLn "\n\treturn ret;"
       putStrLn "}"
-      putStrLn "Printing to file automaton.cpp"
+      putStrLn "writing to file..."
       writeCppFile prgrm
 
 
@@ -326,9 +242,40 @@ expToTree expression =
           fixedChildTree = appendToLeaves childTree (Node (KleeneStop, 0) []) 
       in Node (KleeneStart, 0) [fixedChildTree]
 
-
 writeCppFile :: String -> IO ()
 writeCppFile content = do
-  writeFile "automaton.cpp" "header of the file"
-  appendFile "automaton.cpp" content
-  appendFile "automaton.cpp" "footer of the file"
+  writeFile filename "#ifndef COMPILED_PNK_PROGRAM_H\n#define COMPILED_PNK_PROGRAM_H\n#include \"pnk-program.h\"\n"
+  appendFile filename "PnkPrgrm getAutomaton() {\n\tPnkPrgrm ret;\n"
+  appendFile filename content
+  appendFile filename "\n\treturn ret;\n}"
+  appendFile filename "\n#endif"
+  where filename = "ns3/compiled-pnk-program.h"
+-- idea, do a second pass through the tree and construct another tree containing all the information (node number, parent number, instruction)
+
+getAutomatonTree' :: Int -> Int -> Tree InstNode -> (Tree AutomatonNode, Int)
+getAutomatonTree' nodenr parentnr (Node (x,y) []) = (Node (x,y, nodenr, parentnr) [], nodenr + 1)
+getAutomatonTree' nodenr parentnr (Node (x,y) [leftTree]) = do
+  let newLeftTree = getAutomatonTree' (nodenr + 1) nodenr leftTree
+  (Node (x,y, nodenr, parentnr) [fst newLeftTree], snd newLeftTree)
+getAutomatonTree' nodenr parentnr (Node (x,y) (leftTree:rightTree)) = do
+  let newLeftTree = getAutomatonTree' (nodenr + 1) nodenr leftTree
+  let newRightTree = getAutomatonTree' (snd newLeftTree) nodenr (head rightTree)
+  (Node (x,y, nodenr, parentnr) [fst newLeftTree, fst newRightTree], snd newRightTree)
+
+
+getAutomatonTree :: Tree InstNode -> Tree AutomatonNode
+getAutomatonTree (Node (x,y) z) = fst $ getAutomatonTree' 0 0 (Node (x,y) z)
+
+automatonToCppString :: Tree AutomatonNode -> String
+automatonToCppString (Node (x,y,z,w) []) = instrToCppString z w (x,y)
+automatonToCppString (Node (x,y,z,w) [leftTree]) = do
+  let newLeftTree = automatonToCppString leftTree
+  instrToCppString z w (x,y) ++ "\n" ++ newLeftTree
+automatonToCppString (Node (x,y,z,w) (leftTree:rightTree)) = do
+  let newLeftTree = automatonToCppString leftTree
+  let newRightTree = automatonToCppString (head rightTree)
+  instrToCppString z w (x,y) ++ "\n" ++ newLeftTree ++ "\n" ++ newRightTree
+
+
+getStringFromExp :: Exp -> String
+getStringFromExp = automatonToCppString . getAutomatonTree . expToTree

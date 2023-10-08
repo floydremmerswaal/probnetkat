@@ -15,14 +15,16 @@
 
 #include "pnk-client-server-helper.h"
 
+#include "pnk-program.cc"
+
 #include "ns3/applications-module.h"
 #include "ns3/core-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/mobility-helper.h"
+#include "ns3/mobility-module.h"
 #include "ns3/netanim-module.h"
 #include "ns3/network-module.h"
 #include "ns3/point-to-point-module.h"
-#include "ns3/mobility-module.h"
 
 // Triangle Network Topology
 //
@@ -33,18 +35,24 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("TriangleTest");
-
+NS_LOG_COMPONENT_DEFINE("PnkSim");
 
 // create a full adjacency matrix (all nodes are connected to all other nodes)
-std::vector<std::vector<bool>> getAdj_MatrixFull(int n){
+std::vector<std::vector<bool>>
+getAdj_MatrixFull(int n)
+{
     std::vector<std::vector<bool>> Adj_Matrix;
-    for (int i = 0; i < n; i++){
+    for (int i = 0; i < n; i++)
+    {
         std::vector<bool> row;
-        for (int j = 0; j < n; j++){
-            if (i == j){
+        for (int j = 0; j < n; j++)
+        {
+            if (i == j)
+            {
                 row.push_back(false);
-            } else {
+            }
+            else
+            {
                 row.push_back(true);
             }
         }
@@ -63,13 +71,13 @@ int main(int argc, char *argv[])
     LogComponentEnable("PnkServer", LOG_LEVEL_INFO);
 
     // settings
-    const int n_nodes = 3; 
+    const int n_nodes = 3;
 
     std::string animFile = "pnk-animation.xml"; // Name of file for animation output
-    const int initial_packet_destinations[] = {0,1,0};
+    const int initial_packet_destinations[] = {0, 1, 0};
     const int intital_packet_number = 3;
-    const bool use_time_list = true;    // use the list of times to send the packets
-                                        // or set the time between packets
+    const bool use_time_list = true; // use the list of times to send the packets
+                                     // or set the time between packets
 
     const double initial_packet_times[] = {2.0, 2.5, 3.0};
 
@@ -81,14 +89,12 @@ int main(int argc, char *argv[])
     // Adj_Matrix.push_back({1,0,1});
     // Adj_Matrix.push_back({1,1,0});
 
-
     // create the nodes
 
-    NodeContainer nodes; // Declare nodes objects
+    NodeContainer nodes;       // Declare nodes objects
     nodes.Create(n_nodes + 1); // one more for the master node
 
     auto masternode = nodes.Get(n_nodes);
-
 
     std::string LinkRate("10Mbps");
     std::string LinkDelay("100ms");
@@ -112,7 +118,7 @@ int main(int argc, char *argv[])
     NS_LOG_INFO("Create Links Between Nodes.");
 
     // create links, we only take the upper (right) triangle of the adjacency matrix
-    // this is because the adjacency matrix is symmetric
+    // because the adjacency matrix is symmetric
 
     for (size_t i = 0; i < Adj_Matrix.size(); i++)
     {
@@ -134,19 +140,22 @@ int main(int argc, char *argv[])
     }
 
     // add master node to send initial packets (network ingress)
-    // we place the master node at the end so that the other nodes numbers dont get shifted (and we start at 0)
-    // this master node is connected to all other nodes
-    // thought: we only have to connect it to the list of initial packet destinations
-    // this might be a premature optimization: we can just connect it to all nodes and it will work fine
-    // also, that might make it more flexible (needing just a config change instead of a recompile)
+    // we place the master node at the end so that the other nodes numbers dont get shifted (and we
+    // start at 0) this master node is connected to all other nodes thought: we only have to connect
+    // it to the list of initial packet destinations this might be a premature optimization: we can
+    // just connect it to all nodes and it will work fine also, that might make it more flexible
+    // (needing just a config change instead of a recompile)
 
     bool master_node_connections[n_nodes] = {false};
-    for (int i = 0; i < intital_packet_number; i++){
+    for (int i = 0; i < intital_packet_number; i++)
+    {
         master_node_connections[initial_packet_destinations[i]] = true;
     }
 
-    for (size_t i = 0; i < Adj_Matrix.size(); i++){
-        if (master_node_connections[i]){
+    for (size_t i = 0; i < Adj_Matrix.size(); i++)
+    {
+        if (master_node_connections[i])
+        {
             NodeContainer n_links = NodeContainer(masternode, nodes.Get(i));
             NetDeviceContainer n_devs = p2p.Install(n_links);
             ipv4_n.Assign(n_devs);
@@ -186,7 +195,7 @@ int main(int argc, char *argv[])
     {
         nLoc = CreateObject<ConstantPositionMobilityModel>();
         n0->AggregateObject(nLoc);
-    } 
+    }
     Vector nVec(20, 20, 0);
     nLoc->SetPosition(nVec);
 
@@ -205,7 +214,6 @@ int main(int argc, char *argv[])
         std::cout << "Node " << i << " has address " << ip_addr << std::endl;
         std::string nodename = "Node" + std::to_string(i);
         nodeAddressMap[i] = ip_addr;
-
     }
 
     PnkServerHelper serverHelp(9);
@@ -216,33 +224,29 @@ int main(int argc, char *argv[])
     uint16_t port = 9;
 
     // create the initial packets
-    for (int i = 0; i < intital_packet_number; i++){
+    for (int i = 0; i < intital_packet_number; i++)
+    {
         Ptr<Ipv4> ipv4 = nodes.Get(initial_packet_destinations[i])->GetObject<Ipv4>();
         Ipv4InterfaceAddress ipv4_int_addr = ipv4->GetAddress(1, 0);
         Ipv4Address ip_addr = ipv4_int_addr.GetLocal();
         PnkClientHelper clienth(ip_addr, port); // traffic flows from node[i] to node[j]
         clienth.SetAttribute("MaxPackets", UintegerValue(1));
-        double time = use_time_list ? initial_packet_times[i] : initial_packet_time + i * time_between_packets;
-        ApplicationContainer apps =
-            clienth.Install(masternode);
+        double time = use_time_list ? initial_packet_times[i]
+                                    : initial_packet_time + i * time_between_packets;
+        ApplicationContainer apps = clienth.Install(masternode);
         apps.Start(Seconds(time));
-        apps.Stop(Seconds(time+ 0.0001));
+        apps.Stop(Seconds(time + 0.0001));
     }
-
-    
-        
 
     // Create the animation object and configure for specified output
     AnimationInterface anim(animFile);
     anim.EnablePacketMetadata();                                // Optional
     anim.EnableIpv4L3ProtocolCounters(Seconds(0), Seconds(10)); // Optional
-    
-    
 
     // Set up the actual simulation
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
-    Simulator::Stop (Seconds (10.0));
+    Simulator::Stop(Seconds(10.0));
 
     Simulator::Run();
     std::cout << "Animation Trace file created:" << animFile << std::endl;
