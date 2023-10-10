@@ -46,6 +46,13 @@ packages:
       size: 214
   original:
     hackage: pretty-tree-0.1.0.0
+- completed:
+    hackage: fgl-5.8.1.1@sha256:64e912a9a84f4571d02eef8539bf4eebe3dcf1be9853ca4641cfc01c46dd3c0d,3697
+    pantry-tree:
+      sha256: 90a605fd6bff0ee00253e6d6f2cab513f92e6a985e274cd1fc7e28e142457e49
+      size: 2748
+  original:
+    hackage: fgl-5.8.1.1
 snapshots:
 - completed:
     sha256: 14ca51a9a597c32dd7804c10d079feea3d0ae40c5fbbb346cbd67b3ae49f6d01

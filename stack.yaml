@@ -42,6 +42,7 @@ extra-deps:
   - monad-extras-0.6.0
   - containers-0.6.5.1
   - pretty-tree-0.1.0.0
+  - fgl-5.8.1.1
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #

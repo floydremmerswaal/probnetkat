@@ -30,6 +30,7 @@ dependencies:
   - array
   - containers
   - pretty-tree
+  - fgl
 
 ghc-options:
   - -Wall
