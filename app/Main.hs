@@ -20,26 +20,117 @@ import Control.Arrow
 import Control.Monad.Bayes.Enumerator
 
 import Syntax.ErrM
-import Text.Read.Lex (Number)
+import Text.Read.Lex (Number, Lexeme (String))
 
 import Data.Tree
 import Data.Tree.Pretty
 
 
-import Data.Graph.Inductive.Graph (prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes)
+import Data.Graph.Inductive.Graph (prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph))
 import Data.Graph.Inductive.PatriciaTree (Gr)
 
 type ParseFun a = [Token] -> Err a
 
 type Verbosity = Int
 
-testGraph :: IO ()
-testGraph = do
-  let emptyGraph = empty :: Gr () ()
-  let someNode = insNode (1, ()) emptyGraph
-  print someNode
-  print "Hallo"
 
+-- type of Graph is Gr a b with a the type for the nodes and b the type for the edges
+testGraph :: Exp -> IO ()
+testGraph expression = do
+  putStr "testGraph\n"
+  prettyPrint $ expToGraph expression 
+ 
+expToGraph' :: Exp -> Gr InstNode () -> Int -> Int -> (Gr InstNode (), Int)
+expToGraph' expression graph nodenr parentnr =
+  case expression of
+    EAssPt arg -> do
+      let newGraph = insNode (nodenr, (AssPt, fromInteger arg)) graph
+      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      (addedEdge, nodenr)
+    EAssSw arg -> do
+      let newGraph = insNode (nodenr, (AssSw, fromInteger arg)) graph
+      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      (addedEdge, nodenr)
+    ESwEq arg -> do
+      let newGraph = insNode (nodenr, (TestSw, fromInteger arg)) graph
+      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      (addedEdge, nodenr)
+    EPtEq arg -> do
+      let newGraph = insNode (nodenr, (TestPt, fromInteger arg)) graph
+      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      (addedEdge, nodenr)
+    ESwNEq arg -> do
+      let newGraph = insNode (nodenr, (TestSw, fromInteger arg)) graph
+      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      (addedEdge, nodenr)
+    EPtNEq arg -> do
+      let newGraph = insNode (nodenr, (TestPt, fromInteger arg)) graph
+      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      (addedEdge, nodenr)
+    EDup -> do
+      let newGraph = insNode (nodenr, (Dup, 0)) graph
+      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      (addedEdge, nodenr)
+    ESkip -> do
+      let newGraph = insNode (nodenr, (Skip, 0)) graph
+      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      (addedEdge, nodenr)
+    EDrop -> do
+      let newGraph = insNode (nodenr, (Drop, 0)) graph
+      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      (addedEdge, nodenr)
+    ESeq e1 e2 -> do
+      let (leftGraph, leftmax ) = expToGraph' e1 graph nodenr parentnr 
+      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) leftmax
+      -- let connection = insEdge (leftmax, leftmax + 1, ()) rightGraph
+      (rightGraph, rightmax)
+    EProb e1 d e2 -> do
+      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr
+      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr
+      let newGraph = insNode (nodenr, (Prob, d)) rightGraph
+      -- I feel like leftEdge and rightEdge should be handled by the children
+      -- but deleting them does not work..
+      let leftEdge = insEdge (nodenr, nodenr + 1, ()) newGraph
+      let rightEdge = insEdge (nodenr, leftmax + 1, ()) leftEdge
+      let parentEdge = insEdge (parentnr, nodenr, ()) rightEdge
+      (parentEdge, rightmax)
+    EProbD e1 e2 -> do
+      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr
+      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr
+      let newGraph = insNode (nodenr, (Prob, 0.5)) rightGraph
+      -- I feel like leftEdge and rightEdge should be handled by the children
+      -- but deleting them does not work..
+      let leftEdge = insEdge (nodenr, nodenr + 1, ()) newGraph
+      let rightEdge = insEdge (nodenr, leftmax + 1, ()) leftEdge
+      let parentEdge = insEdge (parentnr, nodenr, ()) rightEdge
+      (parentEdge, rightmax)
+    EPar e1 e2 -> do
+      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr
+      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr
+      let newGraph = insNode (nodenr, (Par, 0)) rightGraph
+      -- I feel like leftEdge and rightEdge should be handled by the children
+      -- but deleting them does not work..
+      let leftEdge = insEdge (nodenr, nodenr + 1, ()) newGraph
+      let rightEdge = insEdge (nodenr, leftmax + 1, ()) leftEdge
+      let parentEdge = insEdge (parentnr, nodenr, ()) rightEdge
+      (parentEdge, rightmax)
+    EKleene e1 -> do 
+      -- in the graph version, we no longer need kleede nodes
+      -- we will just loop back to the beginning
+      let (childGraph, childmax) = expToGraph' e1 graph nodenr parentnr
+      let newGraph = insEdge (childmax, nodenr, ()) childGraph
+      (newGraph, childmax)
+
+
+
+expToGraph :: Exp -> Gr InstNode ()
+expToGraph expression = do 
+   -- insert a skip in the beginning as no-op
+   -- to prevent self loop at the beginning
+  let thegraph = empty  :: Gr InstNode ()
+  let seeded = insNode (0, (Skip, 0)) thegraph
+  let (graph, _) = expToGraph' expression seeded 1 0
+  graph
 
 putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
@@ -105,8 +196,8 @@ main = do
   args <- getArgs
   case args of
     ["--help"] -> usage
-    ["-g"]    -> testGraph
-    []         -> getContents >>= run 2 pExp
+    --[]         -> getContents >>= run 2 pExp
+    []        -> testGraph (ESeq (EAssSw 1) (EAssPt 1))
     "-s":fs    -> mapM_ (runFile 0 pExp) fs
     "--test":fs  -> testF fs
     "--auto":fs -> createAutomaton fs
@@ -190,20 +281,23 @@ createAutomaton content = do
       putStrLn err
       exitFailure
     Right tree -> do
+      -- temporarily hijacked for testing purposes
       putStrLn "\nParse Successful!\n"
-      showTree 2 tree
-      -- traverse the tree and print the c++ code
-      putStrLn "Tree:"
-      printAutomaton $ expToTree tree
-      putStrLn "C++ code:"
-      putStrLn "PnkPrgrm getAutomaton() {"
-      putStrLn "\tPnkPrgrm ret;"
-      let prgrm = getStringFromExp tree
-      putStr prgrm
-      putStrLn "\n\treturn ret;"
-      putStrLn "}"
-      putStrLn "writing to file..."
-      writeCppFile prgrm
+      testGraph tree
+      -- putStrLn "\nParse Successful!\n"
+      -- showTree 2 tree
+      -- -- traverse the tree and print the c++ code
+      -- putStrLn "Tree:"
+      -- printAutomaton $ expToTree tree
+      -- putStrLn "C++ code:"
+      -- putStrLn "PnkPrgrm getAutomaton() {"
+      -- putStrLn "\tPnkPrgrm ret;"
+      -- let prgrm = getStringFromExp tree
+      -- putStr prgrm
+      -- putStrLn "\n\treturn ret;"
+      -- putStrLn "}"
+      -- putStrLn "writing to file..."
+      -- writeCppFile prgrm
 
 
 
