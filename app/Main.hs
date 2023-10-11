@@ -25,9 +25,20 @@ import Text.Read.Lex (Number)
 import Data.Tree
 import Data.Tree.Pretty
 
+
+import Data.Graph.Inductive.Graph (prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes)
+import Data.Graph.Inductive.PatriciaTree (Gr)
+
 type ParseFun a = [Token] -> Err a
 
 type Verbosity = Int
+
+testGraph :: IO ()
+testGraph = do
+  let emptyGraph = empty :: Gr () ()
+  let someNode = insNode (1, ()) emptyGraph
+  print someNode
+  print "Hallo"
 
 
 putStrV :: Verbosity -> String -> IO ()
@@ -94,6 +105,7 @@ main = do
   args <- getArgs
   case args of
     ["--help"] -> usage
+    ["-g"]    -> testGraph
     []         -> getContents >>= run 2 pExp
     "-s":fs    -> mapM_ (runFile 0 pExp) fs
     "--test":fs  -> testF fs
@@ -102,11 +114,11 @@ main = do
     fs         -> mapM_ (runFileAndIO 2 pExp) fs
 
 
-prettyPrint :: [(SH, Double)] -> IO ()
-prettyPrint [] = return ()
-prettyPrint ((sh, d):xs) = do
+prettyPrintSHD :: [(SH, Double)] -> IO ()
+prettyPrintSHD [] = return ()
+prettyPrintSHD ((sh, d):xs) = do
   putStrLn $ printf "%.2f" (d * 100) ++ "%" ++ " : " ++ show sh
-  prettyPrint xs
+  prettyPrintSHD xs
 
 testF :: [String] ->  IO ()
 testF fs = do
@@ -129,7 +141,7 @@ testF fs = do
       let result = runKleisli kleisliArrow initialSet
       let samples = enumerator result
       putStrLn "Function output:"
-      prettyPrint samples
+      prettyPrintSHD samples
 
 data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip | KleeneStart | KleeneStop deriving Show
 type InstNode = (Inst, Double)
