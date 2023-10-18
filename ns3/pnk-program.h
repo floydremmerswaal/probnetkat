@@ -15,16 +15,38 @@ const int PAR = 8;
 const int KLEENESTART = 9;
 const int KLEENESTOP = 10;
 
+class NewPnkPrgrmNode
+{
+    // we have a number of edges
+    NewPnkPrgrmNode();
+    ~NewPnkPrgrmNode();
+    int nodenr;
+    std::vector<NewPnkPrgrmEdge> edges;
+
+}
+
+class NewPnkPrgrmEdge
+
+{
+  public:
+    NewPnkPrgrmEdge();
+    ~NewPnkPrgrmEdge();
+    int from;
+    int to;
+    int weight;
+    int edgeNr;
+};
+
 class PnkPrgrmNode
 {
-public:
+  public:
     PnkPrgrmNode();
     ~PnkPrgrmNode();
     uint32_t instr;
     uint32_t arg;
     double farg;
-    std::vector<PnkPrgrmNode *> next;
-    std::vector<PnkPrgrmNode *> prev;
+    std::vector<PnkPrgrmNode*> next;
+    std::vector<PnkPrgrmNode*> prev;
     int nodenr; // so the node knows its own number
 };
 
@@ -43,16 +65,17 @@ PnkPrgrmNode::~PnkPrgrmNode()
 
 class PnkPrgrm
 {
-public:
+  public:
     PnkPrgrm();
     ~PnkPrgrm();
     int addNode(int parentnodenr, uint32_t instr, uint32_t arg, double farg);
+    int addRawNode(uint32_t instr, uint32_t arg, double farg);
     int addLink(int from, int to);
-    PnkPrgrmNode *getNode(uint32_t nodenr);
+    PnkPrgrmNode* getNode(uint32_t nodenr);
 
-private:
-    PnkPrgrmNode *start;
-    std::map<uint32_t, PnkPrgrmNode *> nodeNrToNode;
+  private:
+    PnkPrgrmNode* start;
+    std::map<uint32_t, PnkPrgrmNode*> nodeNrToNode;
     uint32_t nodeCount;
 };
 
@@ -71,7 +94,7 @@ PnkPrgrm::~PnkPrgrm()
     return;
 }
 
-PnkPrgrmNode *
+PnkPrgrmNode*
 PnkPrgrm::getNode(uint32_t nodenr)
 {
     if (nodeNrToNode.count(nodenr) > 0)
@@ -80,10 +103,11 @@ PnkPrgrm::getNode(uint32_t nodenr)
 }
 
 // create a link from node from to node to
-int PnkPrgrm::addLink(int from, int to)
+int
+PnkPrgrm::addLink(int from, int to)
 {
-    PnkPrgrmNode *fromnode = getNode(from);
-    PnkPrgrmNode *tonode = getNode(to);
+    PnkPrgrmNode* fromnode = getNode(from);
+    PnkPrgrmNode* tonode = getNode(to);
 
     if (fromnode == nullptr || tonode == nullptr)
     {
@@ -95,9 +119,23 @@ int PnkPrgrm::addLink(int from, int to)
     return 0;
 }
 
-int PnkPrgrm::addNode(int parentnodenr, uint32_t instr, uint32_t arg, double farg)
+int
+PnkPrgrm::addRawNode(uint32_t instr, uint32_t arg = 0, double farg = 0.0f)
 {
-    PnkPrgrmNode *newnode = new PnkPrgrmNode();
+    PnkPrgrmNode* newnode = new PnkPrgrmNode();
+    newnode->instr = instr;
+    newnode->arg = arg;
+    newnode->farg = farg;
+    newnode->nodenr = nodeCount;
+    nodeNrToNode[nodeCount] = newnode;
+    nodeCount++;
+    return newnode->nodenr;
+}
+
+int
+PnkPrgrm::addNode(int parentnodenr, uint32_t instr, uint32_t arg, double farg)
+{
+    PnkPrgrmNode* newnode = new PnkPrgrmNode();
     newnode->instr = instr;
     newnode->arg = arg;
     newnode->farg = farg;
@@ -110,7 +148,7 @@ int PnkPrgrm::addNode(int parentnodenr, uint32_t instr, uint32_t arg, double far
     }
     else
     {
-        PnkPrgrmNode *node = nodeNrToNode[parentnodenr];
+        PnkPrgrmNode* node = nodeNrToNode[parentnodenr];
         node->next.push_back(newnode);
 
         newnode->prev.push_back(node);

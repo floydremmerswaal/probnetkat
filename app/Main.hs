@@ -26,20 +26,42 @@ import Data.Tree
 import Data.Tree.Pretty
 
 
-import Data.Graph.Inductive.Graph (prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph))
+import Data.Graph.Inductive.Graph (prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes)
+import Data.Graph.Inductive.Basic (gfold)
 import Data.Graph.Inductive.PatriciaTree (Gr)
+
+import Data.Graph.Inductive.Dot (fglToDot, showDot)
+import Data.Graph.Inductive.Query (bfs, bfe)
 
 type ParseFun a = [Token] -> Err a
 
 type Verbosity = Int
 
+printNodeList :: [(Int, a)] -> IO ()
+printNodeList [] = return ()
+printNodeList ((nr, something):xs) = do
+  putStrLn $ show nr ++ " : " ++ show something
+  printNodeList xs
+
+getGraphNodes :: Gr a b -> IO ()
+getGraphNodes graph = do 
+  let nodelist = labNodes graph
+  printNodeList nodelist
+
+writeGraphToFile :: String -> Gr InstNode () -> IO ()
+writeGraphToFile name graph = do
+  let dot = showDot $ fglToDot graph
+  writeFile name dot
 
 -- type of Graph is Gr a b with a the type for the nodes and b the type for the edges
 testGraph :: Exp -> IO ()
 testGraph expression = do
   putStr "testGraph\n"
-  prettyPrint $ expToGraph expression 
- 
+  let graph = expToGraph expression
+  prettyPrint graph
+  writeGraphToFile "automaton.dot" graph
+  
+
 expToGraph' :: Exp -> Gr InstNode () -> Int -> Int -> (Gr InstNode (), Int)
 expToGraph' expression graph nodenr parentnr =
   case expression of
@@ -115,7 +137,7 @@ expToGraph' expression graph nodenr parentnr =
       let parentEdge = insEdge (parentnr, nodenr, ()) rightEdge
       (parentEdge, rightmax)
     EKleene e1 -> do 
-      -- in the graph version, we no longer need kleede nodes
+      -- in the graph version, we no longer need kleene nodes
       -- we will just loop back to the beginning
       let (childGraph, childmax) = expToGraph' e1 graph nodenr parentnr
       let newGraph = insEdge (childmax, nodenr, ()) childGraph
@@ -134,25 +156,6 @@ expToGraph expression = do
 
 putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
-
-runFileAndIO :: (Print a, Show a) => Verbosity -> ParseFun a -> FilePath -> IO ()
-runFileAndIO v p f = do
-  runFile v p f
-  putStrLn "Starting interactive session..."
-  --interactiveSession
-
-
--- interactiveSession :: IO ()
--- interactiveSession = do 
---   putStr ""
---   line <- getLine
---   if line == "quit" 
---     then putStrLn "Bye"
---     else do
---       case line of 
---           "" -> putStrLn "success!"
---           _      -> putStrLn "unknown command"
---       interactiveSession 
 
 runFile :: (Print a, Show a) => Verbosity -> ParseFun a -> FilePath -> IO ()
 runFile v p f = putStrLn f >> readFile f >>= run v p
@@ -202,7 +205,7 @@ main = do
     "--test":fs  -> testF fs
     "--auto":fs -> createAutomaton fs
     "-c":fs    -> createAutomaton fs
-    fs         -> mapM_ (runFileAndIO 2 pExp) fs
+    fs         -> mapM_ (runFile 2 pExp) fs
 
 
 prettyPrintSHD :: [(SH, Double)] -> IO ()

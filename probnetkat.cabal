@@ -46,6 +46,7 @@ library
     , base >=4.7 && <5
     , containers
     , fgl
+    , fgl-visualize >=0.1.0.1
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
@@ -67,6 +68,7 @@ executable probnetkat-exe
     , base >=4.7 && <5
     , containers
     , fgl
+    , fgl-visualize >=0.1.0.1
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
@@ -87,6 +89,7 @@ test-suite probnetkat-test
     , base >=4.7 && <5
     , containers
     , fgl
+    , fgl-visualize >=0.1.0.1
     , hspec
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0

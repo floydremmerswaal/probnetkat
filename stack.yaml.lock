@@ -53,6 +53,13 @@ packages:
       size: 2748
   original:
     hackage: fgl-5.8.1.1
+- completed:
+    hackage: fgl-visualize-0.1.0.1@sha256:e682066053a6e75478a08fd6822dd0143a3b8ea23244bdb01dd389a266447c5e,995
+    pantry-tree:
+      sha256: 969d6b60ea298ffb81697dd350e76774a2f876103a147117f832400451ad2cc3
+      size: 224
+  original:
+    hackage: fgl-visualize-0.1.0.1
 snapshots:
 - completed:
     sha256: 14ca51a9a597c32dd7804c10d079feea3d0ae40c5fbbb346cbd67b3ae49f6d01
