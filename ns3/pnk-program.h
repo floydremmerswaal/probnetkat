@@ -70,7 +70,7 @@ class PnkPrgrm
     ~PnkPrgrm();
     int addNode(int parentnodenr, uint32_t instr, uint32_t arg, double farg);
     int addRawNode(uint32_t instr, uint32_t arg, double farg);
-    int addLink(int from, int to);
+    int addEdge(int from, int to);
     PnkPrgrmNode* getNode(uint32_t nodenr);
 
   private:
@@ -104,7 +104,7 @@ PnkPrgrm::getNode(uint32_t nodenr)
 
 // create a link from node from to node to
 int
-PnkPrgrm::addLink(int from, int to)
+PnkPrgrm::addEdge(int from, int to)
 {
     PnkPrgrmNode* fromnode = getNode(from);
     PnkPrgrmNode* tonode = getNode(to);
