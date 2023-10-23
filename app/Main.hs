@@ -37,7 +37,7 @@ type ParseFun a = [Token] -> Err a
 
 type Verbosity = Int
 
-type PnkGraph = Gr InstNode ()
+type PnkGraph = Gr InstNode Double
 
 toNormalForm :: PnkGraph -> PnkGraph
 toNormalForm graph = do
@@ -81,10 +81,10 @@ newInstrToString instrnode = do
     (Drop, _) -> "\tret.addNode(DROP, 0, 0.0);"
     (Skip, _) -> "\tret.addNode(SKIP, 0, 0.0);"
 
-newEdgestoString :: LEdge () -> String
+newEdgestoString :: LEdge Double -> String
 newEdgestoString edge = do
-  let (from, to, _) = edge
-  "\tret.addEdge(" ++ show from ++ ", " ++ show to ++ ");"
+  let (from, to, d) = edge
+  "\tret.addEdge(" ++ show from ++ ", " ++ show to ++ ", " ++ show d ++ ");"
 
 graphToInstructionList :: PnkGraph -> String
 graphToInstructionList graph = do
@@ -99,39 +99,39 @@ expToGraph' expression graph nodenr parentnr =
   case expression of
     EAssPt arg -> do
       let newGraph = insNode (nodenr, (AssPt, fromInteger arg)) graph
-      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     EAssSw arg -> do
       let newGraph = insNode (nodenr, (AssSw, fromInteger arg)) graph
-      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     ESwEq arg -> do
       let newGraph = insNode (nodenr, (TestSw, fromInteger arg)) graph
-      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     EPtEq arg -> do
       let newGraph = insNode (nodenr, (TestPt, fromInteger arg)) graph
-      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     ESwNEq arg -> do
       let newGraph = insNode (nodenr, (TestSw, fromInteger arg)) graph
-      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     EPtNEq arg -> do
       let newGraph = insNode (nodenr, (TestPt, fromInteger arg)) graph
-      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     EDup -> do
       let newGraph = insNode (nodenr, (Dup, 0)) graph
-      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     ESkip -> do
       let newGraph = insNode (nodenr, (Skip, 0)) graph
-      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     EDrop -> do
       let newGraph = insNode (nodenr, (Drop, 0)) graph
-      let addedEdge = insEdge (parentnr, nodenr, ()) newGraph
+      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     ESeq e1 e2 -> do
       let (leftGraph, leftmax ) = expToGraph' e1 graph nodenr parentnr 
@@ -144,9 +144,9 @@ expToGraph' expression graph nodenr parentnr =
       let newGraph = insNode (nodenr, (Prob, d)) rightGraph
       -- I feel like leftEdge and rightEdge should be handled by the children
       -- but deleting them does not work..
-      let leftEdge = insEdge (nodenr, nodenr + 1, ()) newGraph
-      let rightEdge = insEdge (nodenr, leftmax + 1, ()) leftEdge
-      let parentEdge = insEdge (parentnr, nodenr, ()) rightEdge
+      let leftEdge = insEdge (nodenr, nodenr + 1, d) newGraph
+      let rightEdge = insEdge (nodenr, leftmax + 1, 1-d) leftEdge
+      let parentEdge = insEdge (parentnr, nodenr, 1.0) rightEdge
       (parentEdge, rightmax)
     EProbD e1 e2 -> do
       let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr
@@ -154,9 +154,9 @@ expToGraph' expression graph nodenr parentnr =
       let newGraph = insNode (nodenr, (Prob, 0.5)) rightGraph
       -- I feel like leftEdge and rightEdge should be handled by the children
       -- but deleting them does not work..
-      let leftEdge = insEdge (nodenr, nodenr + 1, ()) newGraph
-      let rightEdge = insEdge (nodenr, leftmax + 1, ()) leftEdge
-      let parentEdge = insEdge (parentnr, nodenr, ()) rightEdge
+      let leftEdge = insEdge (nodenr, nodenr + 1, 0.5) newGraph
+      let rightEdge = insEdge (nodenr, leftmax + 1, 0.5) leftEdge
+      let parentEdge = insEdge (parentnr, nodenr, 1.0) rightEdge
       (parentEdge, rightmax)
     EPar e1 e2 -> do
       let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr
@@ -164,15 +164,15 @@ expToGraph' expression graph nodenr parentnr =
       let newGraph = insNode (nodenr, (Par, 0)) rightGraph
       -- I feel like leftEdge and rightEdge should be handled by the children
       -- but deleting them does not work..
-      let leftEdge = insEdge (nodenr, nodenr + 1, ()) newGraph
-      let rightEdge = insEdge (nodenr, leftmax + 1, ()) leftEdge
-      let parentEdge = insEdge (parentnr, nodenr, ()) rightEdge
+      let leftEdge = insEdge (nodenr, nodenr + 1, 1.0) newGraph
+      let rightEdge = insEdge (nodenr, leftmax + 1, 1.0) leftEdge
+      let parentEdge = insEdge (parentnr, nodenr, 1.0) rightEdge
       (parentEdge, rightmax)
     EKleene e1 -> do 
       -- in the graph version, we no longer need kleene nodes
       -- we will just loop back to the beginning
       let (childGraph, childmax) = expToGraph' e1 graph nodenr parentnr
-      let newGraph = insEdge (childmax, nodenr, ()) childGraph
+      let newGraph = insEdge (childmax, nodenr, 1.0) childGraph
       (newGraph, childmax)
 
 
