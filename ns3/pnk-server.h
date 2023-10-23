@@ -116,6 +116,8 @@ class PnkServer : public Application
     uint64_t m_received;             //!< Number of received packets
     PacketLossCounter m_lossCounter; //!< Lost packet counter
 
+    std::map<uint32_t, std::map<uint32_t, bool>> nodenrToBranchMap;
+
     /// Callbacks for tracing the packet Rx events
     TracedCallback<Ptr<const Packet>> m_rxTrace;
 

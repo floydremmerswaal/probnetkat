@@ -129,6 +129,7 @@ PnkServer::PnkServer()
     m_received = 0;
     m_nodeAddressMap = {};
     m_socketMap = {};
+    nodenrToBranchMap = {};
     // TODO initialize the program, so that we do not have to construct the program every time
     // HandleRead is called
 }
@@ -385,21 +386,7 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                     break;
                 }
                 case PAR: {
-                    // this one requires some thought
-
-                    // probably: add the current program node number to the pnk header
-                    // to do that, the header needs to support that
-                    // also, variable length header requires some thought probably
-
-                    // if that is implemented, we add the current program node number to the header
-                    // and then we send the packet to the left branch
-
-                    // this requires restructuring dropping packets
-                    // if that happens, we need to check the pnk header for previous parallel
-                    // branches and revert to that state. that means also reverting the flow of the
-                    // program and sending packets back. mhm actually no, we need to record the
-                    // state of the packet at the time of branching and the node at which we
-                    // branched... and then we can just send the packet back?
+                    std::cout << "PAR" << std::endl;
                     break;
                 }
                 case TESTSW: {
