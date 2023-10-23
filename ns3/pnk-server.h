@@ -112,7 +112,6 @@ class PnkServer : public Application
     uint16_t m_port;                 //!< Port on which we listen for incoming packets.
     Ptr<Socket> m_socket;            //!< IPv4 Socket
     Ptr<Socket> m_socket6;           //!< IPv6 Socket
-
     
     uint64_t m_received;             //!< Number of received packets
     PacketLossCounter m_lossCounter; //!< Lost packet counter

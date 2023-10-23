@@ -249,7 +249,46 @@ PnkServer::StopApplication()
 bool
 PnkServer::SendToNodeNr(uint32_t nodenr, Ptr<Packet> packet)
 {
+    if (m_socketMap.count(nodenr) == 0)
+    {
+        std::cout << "WARNING: no socket found for node " << nodenr << std::endl;
+        std::cout << "This might be a problem in the ProbNetKAT program or the network configuration" << std::endl;
+        std::cout << "Are you sure this node exists?" << std::endl;
+        return false;
+    }
     return m_socketMap[nodenr]->Send(packet);
+}
+
+int getNextNodeNr(PnkPrgrm* program, int curnode, Ptr<UniformRandomVariable> m_rng){
+    PnkNode* node = program->getNode(curnode);
+    if (node->edges.size() == 0){
+        return -1;
+    } else if (node->edges.size() == 1){
+        return node->edges[0].to;
+    } else {
+        // if it is a prob node, normalise the weights
+        // pick one of the edges
+        if (node->instr == PROB){
+            double sum = 0;
+            for (uint32_t i = 0; i < node->edges.size(); i++){
+                sum += node->edges[i].weight;
+            }
+
+            double rnd = m_rng->GetValue() * sum;
+            double cur = 0;
+            for (uint32_t i = 0; i < node->edges.size(); i++){
+                cur += node->edges[i].weight;
+                if (rnd < cur){
+                    return node->edges[i].to;
+                }
+            }
+        } else {
+            // parallel node
+            // for now, just pick the first one
+            return node->edges[0].to;
+        }
+    }
+    return -1;
 }
 
 void
@@ -292,19 +331,16 @@ PnkServer::HandleRead(Ptr<Socket> socket)
 
             Ptr<Packet> packet_copy = packet->Copy();
             bool done = false;
-            bool takefirstbranch = true;
 
             while (!done)
             {
-                takefirstbranch = true;
-                PnkPrgrmNode* curnode = curprog.getNode(pnkhead.GetCur());
+                PnkNode* curnode = curprog.getNode(pnkhead.GetCur());
                 uint32_t instr = curnode->instr;
                 uint32_t arg = curnode->arg;
-                double farg = curnode->farg;
                 uint32_t curnodenr = curnode->nodenr;
 
                 std::cout << "PC: " << curnodenr << ", instr: " << instrString(instr)
-                          << ", arg: " << arg << ", farg: " << farg << std::endl;
+                          << ", arg: " << arg  << std::endl;
 
                 switch (instr)
                 {
@@ -320,18 +356,9 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                     // figure out which socket to send the packet on
                     std::cout << "DUP" << std::endl;
 
-                    int nextnodenr;
-                    if (curnode->next[0] != nullptr)
-                    {
-                        nextnodenr = curnode->next[0]->nodenr;
-                        std::cout << "Next program node is " << nextnodenr << std::endl;
-                    }
-                    else
-                    {
-                        // error we do not know what to do
-                        std::cout << "No next node???" << std::endl;
-                        return;
-                    }
+                    int nextnodenr = getNextNodeNr(&curprog, curnodenr, m_rng);
+
+                    std::cout << "Next program node is " << nextnodenr << std::endl;
 
                     pnkhead.SetCur(nextnodenr);
                     packet_copy->AddHeader(pnkhead);
@@ -354,12 +381,7 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                     return;
                 }
                 case PROB: {
-                    std::cout << "PROB(" << farg << ")" << std::endl;
-                    double rnd = m_rng->GetValue();
-                    std::cout << "Rnd value: " << rnd << " so taking "
-                              << (rnd < farg ? "left" : "right") << " branch" << std::endl;
-                    takefirstbranch = (rnd < farg);
-                    std::cout << "Take first branch: " << takefirstbranch << std::endl;
+                    std::cout << "PROB" << std::endl;
                     break;
                 }
                 case PAR: {
@@ -429,40 +451,6 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                     std::cout << "SKIP" << std::endl;
                     break;
                 }
-                case KLEENESTART: {
-                    // Thought: if the automaton is correct there shouldnt even be kleene nodes
-                    // there would simply be a loop in the automaton
-
-                    // functionally a noop or skip
-                    std::cout << "KLEENESTART" << std::endl;
-                    break;
-                }
-                case KLEENESTOP: {
-                    // go back to the previous kleenestart (?)
-                    // this is quite simplistic actually, nested kleene stars would not work then...
-                    // how do we fix that?
-                    // maybe we keep track of how deep we are..?
-
-                    // this is a bit of a hack, but it works for now
-                    // we just go back to the previous kleenestart
-
-                    uint32_t targetnode = 0;
-
-                    PnkPrgrmNode* node = curnode;
-                    while (node->instr != KLEENESTART)
-                    {
-                        node = node->prev[0];
-                    }
-                    targetnode = node->nodenr;
-
-                    // set the pnkhead to the correct values
-                    pnkhead.SetCur(targetnode);
-                    packet_copy->AddHeader(pnkhead);
-                    curnode = node;
-
-                    std::cout << "KLEENESTOP" << std::endl;
-                    break;
-                }
                 default: {
                     std::cout << "WARNING: unknown instruction" << std::endl;
                     done = true;
@@ -470,20 +458,16 @@ PnkServer::HandleRead(Ptr<Socket> socket)
                 }
                 }
                 // pc++; oh how simple it was when we just had linear programs
-
-                if (takefirstbranch && curnode->next.size() > 0)
-                {
-                    pnkhead.SetCur(curnode->next[0]->nodenr);
-                }
-                else if (!takefirstbranch && curnode->next.size() > 1)
-                {
-                    pnkhead.SetCur(curnode->next[1]->nodenr);
-                }
-                else
-                {
-                    std::cout << "ERRORRRR" << std::endl;
+                
+                int nextnodenr = getNextNodeNr(&curprog, curnodenr, m_rng);
+                if (nextnodenr == -1){
+                    std::cout << "WARNING: no next node found" << std::endl;
+                    done = true;
                     return;
+                } else {
+                    pnkhead.SetCur(nextnodenr);
                 }
+
             }
 
             if (InetSocketAddress::IsMatchingType(from))

@@ -3,14 +3,20 @@
 #include "pnk-program.h"
 PnkPrgrm getAutomaton() {
 	PnkPrgrm ret;
-	ret.addNode(0,  KLEENESTART, 0, 0.0);
-	ret.addNode(0,  SW, 2.0, 0.0);
-	ret.addNode(1,  DUP, 0, 0.0);
-	ret.addNode(2,  SW, 1.0, 0.0);
-	ret.addNode(3,  DUP, 0, 0.0);
-	ret.addNode(4,  SW, 0.0, 0.0);
-	ret.addNode(5,  DUP, 0, 0.0);
-	ret.addNode(6,  KLEENESTOP, 0, 0.0);
+	ret.addNode(SKIP, 0.0);
+	ret.addNode(SW, 1.0);
+	ret.addNode(DUP, 0.0);
+	ret.addNode(SW, 2.0);
+	ret.addNode(DUP, 0.0);
+	ret.addNode(SW, 0.0);
+	ret.addNode(DUP, 0.0);
+	ret.addEdge(0, 1, 1.0);
+	ret.addEdge(1, 2, 1.0);
+	ret.addEdge(2, 3, 1.0);
+	ret.addEdge(3, 4, 1.0);
+	ret.addEdge(4, 5, 1.0);
+	ret.addEdge(5, 6, 1.0);
+	ret.addEdge(6, 0, 1.0);
 	return ret;
 }
 #endif
