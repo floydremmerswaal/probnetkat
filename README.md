@@ -1,9 +1,9 @@
 # ProbNetKAT
 Written for my MSc Thesis, this repository implements ProbNetKAT, a probabilistic extension of the SDN language NetKAT.
-Two versions are available: a pure Haskell
+Two options are available: compiling a ProbNetKAT (PNK) program to network simulator Ns3 code, or running interference directly on the program.
 
 # Instructions
-Make sure you have ns3 installed.
+Make sure you have ns3 installed if you wish to simulate running PNK programs.
 
 Run 
 
@@ -24,3 +24,6 @@ Where the options are as follows:
 
 
 To use the compiled program, the ns3 folder in this repository should be symlinked into the scratch folder of the ns3 installation folder. 
+After that, run the simulator.
+
+    ./ns3 run scratch/pnk/pnk-sim.cc
