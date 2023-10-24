@@ -216,14 +216,12 @@ showTree v tree = do
 usage :: IO ()
 usage = do
   putStrLn $ unlines
-    [ "usage: Call with one of the following argument combinations:"
-    , "  -c               Compile to C++"
-    , "  --help          Display this help message."
-    , "  (no arguments)  Parse stdin verbosely."
-    , "  --test (files)      Run test on content of files."
-    , "  (files)         Parse content of files verbosely."
-    , "  -s (files)      Silent mode. Parse content of files silently."
-    , "  --auto (files)    Create automaton from file."
+    [ "Call with one of the following argument combinations:"
+    , "  --help           Display this help message."
+    , "  -i (file)        Run interference on program"
+    , "  -c (file)        Compile program to NS-3 C++"
+    , "  -p (file)        Attempt to parse program"
+    , "  -t (file)        Attempt to parse program and show the resulting tree"
     ]
 
 main :: IO ()
@@ -231,12 +229,10 @@ main = do
   args <- getArgs
   case args of
     ["--help"] -> usage
-    --[]         -> getContents >>= run 2 pExp
-    []        -> testGraph (ESeq (EAssSw 1) (EAssPt 1))
-    "-s":fs    -> mapM_ (runFile 0 pExp) fs
-    "--test":fs  -> testF fs
-    "--auto":fs -> createAutomaton fs
+    "-p":fs    -> mapM_ (runFile 0 pExp) fs
+    "-i":fs  -> interference fs
     "-c":fs    -> createAutomaton fs
+    "-t":fs    -> mapM_ (runFile 2 pExp) fs
     fs         -> mapM_ (runFile 2 pExp) fs
 
 
@@ -246,8 +242,8 @@ prettyPrintSHD ((sh, d):xs) = do
   putStrLn $ printf "%.2f" (d * 100) ++ "%" ++ " : " ++ show sh
   prettyPrintSHD xs
 
-testF :: [String] ->  IO ()
-testF fs = do
+interference :: [String] ->  IO ()
+interference fs = do
   putStrLn "test"
   s <- readFile (head fs)
   let ts = myLexer s
