@@ -26,7 +26,7 @@ import Data.Tree
 import Data.Tree.Pretty
 
 
-import Data.Graph.Inductive.Graph (prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge)
+import Data.Graph.Inductive.Graph (gsel, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges)
 import Data.Graph.Inductive.Basic (gfold)
 import Data.Graph.Inductive.PatriciaTree (Gr)
 
@@ -39,11 +39,26 @@ type Verbosity = Int
 
 type PnkGraph = Gr InstNode Double
 
+-- assume that there exists a PROB node under a PAR node somewhere
+-- also assume there are no loops
+-- we will fix that later
+
+getSubNodes :: PnkGraph -> Int -> [Int]
+getSubNodes graph nr = do 
+  let contexts = gsel (\(x, _) -> x == nr) graph
+
+
 toNormalForm :: PnkGraph -> PnkGraph
 toNormalForm graph = do
   -- in normal form, we push the PROB nodes to the root, and we push the SEQ to the leaves
   -- PAR is just before SEQ leaves
-  graph
+  -- we need to find the PAR nodes
+  let newgraph = empty :: PnkGraph
+  -- insert prob node, probability should be determined when making the edges
+  let withProb = insNode (0, (Prob, 0.0)) newgraph
+  
+
+  newgraph
 
 getGraphNodes :: PnkGraph -> IO ()
 getGraphNodes graph = do 
@@ -56,6 +71,46 @@ writeGraphToFile :: String -> PnkGraph -> IO ()
 writeGraphToFile name graph = do
   let dot = showDot $ fglToDot graph
   writeFile name dot
+
+-- if a PROB node is already found
+expNeedsNormalization' :: Exp -> Bool
+expNeedsNormalization' expression = do
+  case expression of
+    EAssPt _ -> False
+    EAssSw _ -> False
+    ESwEq _ -> False
+    EPtEq _ -> False
+    ESwNEq _ -> False
+    EPtNEq _ -> False
+    EDup -> False
+    ESkip -> False
+    EDrop -> False
+    ESeq e1 e2 -> expNeedsNormalization' e1 || expNeedsNormalization' e2
+    EProbD _ _ -> True
+    EProb _ _ _ -> True
+    EPar e1 e2 -> expNeedsNormalization' e1 || expNeedsNormalization' e2
+    EKleene e1 -> expNeedsNormalization' e1
+
+-- final tree needs to be normalized if it contains a PROB node under a PAR node somewhere
+expNeedsNormalization :: Exp -> Bool
+expNeedsNormalization expression = do 
+  case expression of
+    EAssPt _ -> False
+    EAssSw _ -> False
+    ESwEq _ -> False
+    EPtEq _ -> False
+    ESwNEq _ -> False
+    EPtNEq _ -> False
+    EDup -> False
+    ESkip -> False
+    EDrop -> False
+    ESeq e1 e2 -> expNeedsNormalization e1 || expNeedsNormalization e2
+    EProbD e1 e2 -> expNeedsNormalization' e1 || expNeedsNormalization' e2
+    EProb e1 _ e2 -> expNeedsNormalization' e1 || expNeedsNormalization' e2
+    EPar e1 e2 -> expNeedsNormalization e1 || expNeedsNormalization e2
+    EKleene e1 -> expNeedsNormalization e1
+
+
 
 -- type of Graph is Gr a b with a the type for the nodes and b the type for the edges
 testGraph :: Exp -> IO ()
@@ -184,7 +239,7 @@ expToGraph expression = do
   let thegraph = empty  :: PnkGraph
   let seeded = insNode (0, (Skip, 0)) thegraph
   let (graph, _) = expToGraph' expression seeded 1 0
-  graph
+  if expNeedsNormalization expression then toNormalForm graph else graph
 
 putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
@@ -327,8 +382,6 @@ createAutomaton content = do
       -- putStrLn "}"
       -- putStrLn "writing to file..."
       -- writeCppFile prgrm
-
-
 
 
 appendToLeaves :: Tree InstNode -> Tree InstNode -> Tree InstNode

@@ -84,6 +84,8 @@ int main(int argc, char *argv[])
     const int initial_packet_time = 2;
     const double time_between_packets = 0.5;
 
+    const double simulation_time = 10.0;
+
     std::vector<std::vector<bool>> Adj_Matrix = getAdj_MatrixFull(n_nodes);
     // Adj_Matrix.push_back({0,1,1});
     // Adj_Matrix.push_back({1,0,1});
@@ -241,12 +243,12 @@ int main(int argc, char *argv[])
     // Create the animation object and configure for specified output
     AnimationInterface anim(animFile);
     anim.EnablePacketMetadata();                                // Optional
-    anim.EnableIpv4L3ProtocolCounters(Seconds(0), Seconds(10)); // Optional
+    anim.EnableIpv4L3ProtocolCounters(Seconds(0), Seconds(simulation_time)); // Optional
 
     // Set up the actual simulation
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
-    Simulator::Stop(Seconds(10.0));
+    Simulator::Stop(Seconds(simulation_time));
 
     Simulator::Run();
     std::cout << "Animation Trace file created:" << animFile << std::endl;
