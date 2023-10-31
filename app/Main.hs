@@ -26,12 +26,17 @@ import Data.Tree
 import Data.Tree.Pretty
 
 
-import Data.Graph.Inductive.Graph (gsel, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges)
+import Data.Graph.Inductive.Graph (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges)
 import Data.Graph.Inductive.Basic (gfold)
 import Data.Graph.Inductive.PatriciaTree (Gr)
 
 import Data.Graph.Inductive.Dot (fglToDot, showDot)
-import Data.Graph.Inductive.Query (bfs, bfe)
+import Syntax.Abs (Exp(EAssPt, EAssSw, EPtEq, ESwNEq))
+
+import Data.Maybe (fromMaybe)
+
+
+import Debug.Trace
 
 type ParseFun a = [Token] -> Err a
 
@@ -39,14 +44,65 @@ type Verbosity = Int
 
 type PnkGraph = Gr InstNode Double
 
--- assume that there exists a PROB node under a PAR node somewhere
--- also assume there are no loops
--- we will fix that later
 
-getSubNodes :: PnkGraph -> Int -> [Int]
-getSubNodes graph nr = do 
-  let contexts = gsel (\(x, _) -> x == nr) graph
+-- gfold :: Graph gr	 
+-- => (Context a b -> [Node])	-- direction of fold
+-- -> (Context a b -> c -> d) -- depth aggregation	
+-- -> (Maybe d -> c -> c, c)	-- breadth/level aggregation
+-- -> [Node]	 
+-- -> gr a b	 
+-- -> c
 
+type G = Gr String String
+
+-- Node is an Int, Context is a tuple of (pre, node, label, post)
+-- pre the incoming, post the outgoing edges
+
+di :: (Context String String -> [Node]) -- basically dfs
+di context = do
+  let (_, node, _, post) = context
+  let nextnodes = map snd post
+  trace ("Visiting node: " ++ show node ++ " with next nodes: " ++ show nextnodes ++ " context: " ++  show context) nextnodes
+
+da :: (Context String String -> G -> G) -- identity for now (graph goes to graph)
+da context = trace ("Depth aggregation for node: " ++ show node ++ " context: " ++ show context)
+  where (_, node, _, _) = context
+
+maybeGandGtoG :: Maybe G -> G -> G
+maybeGandGtoG maybeg g = do
+  -- if Maybe G is Nothing, we return the graph
+  -- otherwise we merge the nodes and edges into the graph
+  case maybeg of
+    Nothing -> g
+    Just g' -> do
+      let nodeslist = labNodes g'
+      let edgeslist = labEdges g'
+      let newgraph = insNodes nodeslist g
+      let newgraph' = insEdges edgeslist newgraph
+      newgraph'
+
+maybeGandGtoGTrace :: Maybe G -> G -> G
+maybeGandGtoGTrace maybeg g = do
+  trace ("Breadth aggregation: " ++ show maybeg ++ ", " ++ show g) $ maybeGandGtoG maybeg g
+
+-- ba is a tuple of a function and a graph, the function takes a Maybe G and a G and returns a G
+ba :: (Maybe G -> G -> G, G)
+ba = (maybeGandGtoGTrace, empty)
+
+testGfold :: IO ()
+testGfold = do
+  let g = empty :: Gr String String
+  let g2 = insNode (0, "a") g
+  let g3 = insNode (1, "b") g2
+  let g4 = insNode (2, "c") g3
+  let g5 = insEdge (0, 1, "e1") g4
+  let g6 = insEdge (1, 2, "e2") g5
+  let g7 = insEdge (2, 0, "e3") g6
+  -- write to file
+  let dot = showDot $ fglToDot g7
+  let graph = showDot $ fglToDot $ gfold di da ba [0] g7
+  writeFile "test.dot" dot
+  writeFile "gfold.dot" graph
 
 toNormalForm :: PnkGraph -> PnkGraph
 toNormalForm graph = do
@@ -56,12 +112,12 @@ toNormalForm graph = do
   let newgraph = empty :: PnkGraph
   -- insert prob node, probability should be determined when making the edges
   let withProb = insNode (0, (Prob, 0.0)) newgraph
-  
+
 
   newgraph
 
 getGraphNodes :: PnkGraph -> IO ()
-getGraphNodes graph = do 
+getGraphNodes graph = do
   let nodeslist = labNodes graph
   let edgeslist = labEdges graph
   print nodeslist
@@ -93,7 +149,7 @@ expNeedsNormalization' expression = do
 
 -- final tree needs to be normalized if it contains a PROB node under a PAR node somewhere
 expNeedsNormalization :: Exp -> Bool
-expNeedsNormalization expression = do 
+expNeedsNormalization expression = do
   case expression of
     EAssPt _ -> False
     EAssSw _ -> False
@@ -189,7 +245,7 @@ expToGraph' expression graph nodenr parentnr =
       let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     ESeq e1 e2 -> do
-      let (leftGraph, leftmax ) = expToGraph' e1 graph nodenr parentnr 
+      let (leftGraph, leftmax ) = expToGraph' e1 graph nodenr parentnr
       let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) leftmax
       -- let connection = insEdge (leftmax, leftmax + 1, ()) rightGraph
       (rightGraph, rightmax)
@@ -223,7 +279,7 @@ expToGraph' expression graph nodenr parentnr =
       let rightEdge = insEdge (nodenr, leftmax + 1, 1.0) leftEdge
       let parentEdge = insEdge (parentnr, nodenr, 1.0) rightEdge
       (parentEdge, rightmax)
-    EKleene e1 -> do 
+    EKleene e1 -> do
       -- in the graph version, we no longer need kleene nodes
       -- we will just loop back to the beginning
       let (childGraph, childmax) = expToGraph' e1 graph nodenr parentnr
@@ -233,7 +289,7 @@ expToGraph' expression graph nodenr parentnr =
 
 
 expToGraph :: Exp -> PnkGraph
-expToGraph expression = do 
+expToGraph expression = do
    -- insert a skip in the beginning as no-op
    -- to prevent self loop at the beginning
   let thegraph = empty  :: PnkGraph
@@ -273,6 +329,7 @@ usage = do
   putStrLn $ unlines
     [ "Call with one of the following argument combinations:"
     , "  --help           Display this help message."
+    , "  -g               Test gfold"
     , "  -i (file)        Run interference on program"
     , "  -c (file)        Compile program to NS-3 C++"
     , "  -p (file)        Attempt to parse program"
@@ -284,6 +341,7 @@ main = do
   args <- getArgs
   case args of
     ["--help"] -> usage
+    "-g":_ -> testGfold
     "-p":fs    -> mapM_ (runFile 0 pExp) fs
     "-i":fs  -> interference fs
     "-c":fs    -> createAutomaton fs
@@ -393,7 +451,7 @@ appendToLeaves (Node (x,y) [leftTree]) someSubTree = do
 appendToLeaves (Node (x,y) (leftTree:rightTree)) someSubTree = do
   let newLeftTree = appendToLeaves leftTree someSubTree
   let newRightTree = appendToLeaves (head rightTree)someSubTree
-  Node (x,y) [newLeftTree, newRightTree]  
+  Node (x,y) [newLeftTree, newRightTree]
 
 
 writeCppFile :: String -> IO ()
