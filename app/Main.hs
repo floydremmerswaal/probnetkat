@@ -20,7 +20,6 @@ import Control.Arrow
 import Control.Monad.Bayes.Enumerator
 
 import Syntax.ErrM
-import Text.Read.Lex (Number, Lexeme (String))
 
 import Data.Tree
 import Data.Tree.Pretty
@@ -31,10 +30,6 @@ import Data.Graph.Inductive.Basic (gfold)
 import Data.Graph.Inductive.PatriciaTree (Gr)
 
 import Data.Graph.Inductive.Dot (fglToDot, showDot)
-import Syntax.Abs (Exp(EAssPt, EAssSw, EPtEq, ESwNEq))
-
-import Data.Maybe (fromMaybe)
-
 
 import Debug.Trace
 
@@ -127,8 +122,6 @@ expNeedsNormalization' expression = do
     EAssSw _ -> False
     ESwEq _ -> False
     EPtEq _ -> False
-    ESwNEq _ -> False
-    EPtNEq _ -> False
     EDup -> False
     ESkip -> False
     EDrop -> False
@@ -146,8 +139,6 @@ expNeedsNormalization expression = do
     EAssSw _ -> False
     ESwEq _ -> False
     EPtEq _ -> False
-    ESwNEq _ -> False
-    EPtNEq _ -> False
     EDup -> False
     ESkip -> False
     EDrop -> False
@@ -212,14 +203,6 @@ expToGraph' expression graph nodenr parentnr =
       let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
     EPtEq arg -> do
-      let newGraph = insNode (nodenr, (TestPt, fromInteger arg)) graph
-      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
-      (addedEdge, nodenr)
-    ESwNEq arg -> do
-      let newGraph = insNode (nodenr, (TestSw, fromInteger arg)) graph
-      let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
-      (addedEdge, nodenr)
-    EPtNEq arg -> do
       let newGraph = insNode (nodenr, (TestPt, fromInteger arg)) graph
       let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
       (addedEdge, nodenr)
