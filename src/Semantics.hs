@@ -1,4 +1,4 @@
-module Semantics (assignSw, assignPt, testSw, testPt, testNegPt, testNegSw, dup, skip, drop, seq, prob, par, kleene, Packet, History, SH, KSH, pt, sw) where
+module Semantics (assignSw, assignPt, testSw, testPt, dup, skip, drop, seq, prob, par, kleene, Packet, History, SH, KSH, pt, sw) where
 
 import Prelude hiding (id, (.), drop, seq)
 
@@ -77,11 +77,11 @@ testSw v = fixEmpty >>> testSw' True v
 testPt :: MonadDistribution m => Integer -> Kleisli m SH SH
 testPt v = fixEmpty >>> testPt' True v
 
-testNegSw :: MonadDistribution m => Integer -> Kleisli m SH SH
-testNegSw v = fixEmpty >>> testSw' False v
+-- testNegSw :: MonadDistribution m => Integer -> Kleisli m SH SH
+-- testNegSw v = fixEmpty >>> testSw' False v
 
-testNegPt :: MonadDistribution m => Integer -> Kleisli m SH SH
-testNegPt v = fixEmpty >>> testSw' False v
+-- testNegPt :: MonadDistribution m => Integer -> Kleisli m SH SH
+-- testNegPt v = fixEmpty >>> testSw' False v
 
 -- map the empty set to the set containing an empty history, otherwise return the set itself
 fixEmpty :: MonadDistribution m => KSH m

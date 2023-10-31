@@ -23,22 +23,21 @@ import Syntax.Lex
 %monad { Err } { (>>=) } { return }
 %tokentype {Token}
 %token
-  '!='     { PT _ (TS _ 1)  }
-  '&'      { PT _ (TS _ 2)  }
-  '('      { PT _ (TS _ 3)  }
-  ')'      { PT _ (TS _ 4)  }
-  '*'      { PT _ (TS _ 5)  }
-  '+'      { PT _ (TS _ 6)  }
-  '+['     { PT _ (TS _ 7)  }
-  ';'      { PT _ (TS _ 8)  }
-  '<-'     { PT _ (TS _ 9)  }
-  '='      { PT _ (TS _ 10) }
-  ']'      { PT _ (TS _ 11) }
-  'drop'   { PT _ (TS _ 12) }
-  'dup'    { PT _ (TS _ 13) }
-  'pt'     { PT _ (TS _ 14) }
-  'skip'   { PT _ (TS _ 15) }
-  'sw'     { PT _ (TS _ 16) }
+  '&'      { PT _ (TS _ 1)  }
+  '('      { PT _ (TS _ 2)  }
+  ')'      { PT _ (TS _ 3)  }
+  '*'      { PT _ (TS _ 4)  }
+  '+'      { PT _ (TS _ 5)  }
+  '+['     { PT _ (TS _ 6)  }
+  ';'      { PT _ (TS _ 7)  }
+  '<-'     { PT _ (TS _ 8)  }
+  '='      { PT _ (TS _ 9)  }
+  ']'      { PT _ (TS _ 10) }
+  'drop'   { PT _ (TS _ 11) }
+  'dup'    { PT _ (TS _ 12) }
+  'pt'     { PT _ (TS _ 13) }
+  'skip'   { PT _ (TS _ 14) }
+  'sw'     { PT _ (TS _ 15) }
   L_doubl  { PT _ (TD $$)   }
   L_integ  { PT _ (TI $$)   }
 
@@ -56,8 +55,6 @@ Exp3
   | 'pt' '<-' Integer { Syntax.Abs.EAssPt $3 }
   | 'sw' '=' Integer { Syntax.Abs.ESwEq $3 }
   | 'pt' '=' Integer { Syntax.Abs.EPtEq $3 }
-  | 'sw' '!=' Integer { Syntax.Abs.ESwNEq $3 }
-  | 'pt' '!=' Integer { Syntax.Abs.EPtNEq $3 }
   | 'dup' { Syntax.Abs.EDup }
   | 'skip' { Syntax.Abs.ESkip }
   | 'drop' { Syntax.Abs.EDrop }

@@ -144,8 +144,6 @@ instance Print Syntax.Abs.Exp where
     Syntax.Abs.EAssPt n -> prPrec i 3 (concatD [doc (showString "pt"), doc (showString "<-"), prt 0 n])
     Syntax.Abs.ESwEq n -> prPrec i 3 (concatD [doc (showString "sw"), doc (showString "="), prt 0 n])
     Syntax.Abs.EPtEq n -> prPrec i 3 (concatD [doc (showString "pt"), doc (showString "="), prt 0 n])
-    Syntax.Abs.ESwNEq n -> prPrec i 3 (concatD [doc (showString "sw"), doc (showString "!="), prt 0 n])
-    Syntax.Abs.EPtNEq n -> prPrec i 3 (concatD [doc (showString "pt"), doc (showString "!="), prt 0 n])
     Syntax.Abs.EDup -> prPrec i 3 (concatD [doc (showString "dup")])
     Syntax.Abs.ESkip -> prPrec i 3 (concatD [doc (showString "skip")])
     Syntax.Abs.EDrop -> prPrec i 3 (concatD [doc (showString "drop")])

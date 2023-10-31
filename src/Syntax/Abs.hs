@@ -12,8 +12,6 @@ data Exp
     | EAssPt Integer
     | ESwEq Integer
     | EPtEq Integer
-    | ESwNEq Integer
-    | EPtNEq Integer
     | EDup
     | ESkip
     | EDrop

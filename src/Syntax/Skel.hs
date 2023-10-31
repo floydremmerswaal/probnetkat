@@ -21,8 +21,6 @@ transExp x = case x of
   Syntax.Abs.EAssPt integer -> failure x
   Syntax.Abs.ESwEq integer -> failure x
   Syntax.Abs.EPtEq integer -> failure x
-  Syntax.Abs.ESwNEq integer -> failure x
-  Syntax.Abs.EPtNEq integer -> failure x
   Syntax.Abs.EDup -> failure x
   Syntax.Abs.ESkip -> failure x
   Syntax.Abs.EDrop -> failure x
