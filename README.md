@@ -3,7 +3,7 @@ Written for my MSc Thesis, this repository implements ProbNetKAT, a probabilisti
 Two options are available: compiling a ProbNetKAT (PNK) program to network simulator Ns3 code, or running interference directly on the program.
 
 # Instructions
-Make sure you have ns3 installed if you wish to simulate running PNK programs.
+Make sure you have ns3 installed if you wish to simulate running PNK programs. For instructions on how to install ns3, please see https://www.nsnam.org/docs/release/3.40/installation/html/index.html
 
 Run 
 
