@@ -68,26 +68,19 @@ da :: (Context String String -> G -> G) -- identity for now (graph goes to graph
 da context = trace ("Depth aggregation for node: " ++ show node ++ " context: " ++ show context)
   where (_, node, _, _) = context
 
-maybeGandGtoG :: Maybe G -> G -> G
-maybeGandGtoG maybeg g = do
-  -- if Maybe G is Nothing, we return the graph
-  -- otherwise we merge the nodes and edges into the graph
-  case maybeg of
-    Nothing -> g
-    Just g' -> do
-      let nodeslist = labNodes g'
-      let edgeslist = labEdges g'
-      let newgraph = insNodes nodeslist g
-      let newgraph' = insEdges edgeslist newgraph
-      newgraph'
+combineGraphs :: Maybe G -> G -> G
+combineGraphs Nothing g = g
+combineGraphs (Just g1) g2 = do 
+  let nodes1 = labNodes g1
+  let edges1 = labEdges g1
+  let newnodes = insNodes nodes1 g2
+  let newedges = insEdges edges1 newnodes
+  newedges
 
-maybeGandGtoGTrace :: Maybe G -> G -> G
-maybeGandGtoGTrace maybeg g = do
-  trace ("Breadth aggregation: " ++ show maybeg ++ ", " ++ show g) $ maybeGandGtoG maybeg g
-
+-- if Maybe G is Nothing, we return the graph, otherwise we return the Maybe G
 -- ba is a tuple of a function and a graph, the function takes a Maybe G and a G and returns a G
 ba :: (Maybe G -> G -> G, G)
-ba = (maybeGandGtoGTrace, empty)
+ba = (\maybeg g -> trace ("Breadth aggregation: " ++ show maybeg ++ ", " ++ show g) $ combineGraphs maybeg g, empty)
 
 testGfold :: IO ()
 testGfold = do
