@@ -58,7 +58,7 @@ type G = Gr String String
 -- Node is an Int, Context is a tuple of (pre, node, label, post)
 -- pre the incoming, post the outgoing edges
 
-di :: (Context String String -> [Node]) -- basically dfs
+di :: (Context String String -> [Node])
 di context = do
   let (_, node, _, post) = context
   let nextnodes = map snd post
@@ -92,10 +92,8 @@ testGfold = do
   let g6 = insEdge (1, 2, "e2") g5
   let g7 = insEdge (2, 0, "e3") g6
   -- write to file
-  let dot = showDot $ fglToDot g7
-  let graph = showDot $ fglToDot $ gfold di da ba [0] g7
-  writeFile "test.dot" dot
-  writeFile "gfold.dot" graph
+  writeGraphToFile "test.dot" g7
+  writeGraphToFile "gfold.dot" $ gfold di da ba [0] g7
 
 toNormalForm :: PnkGraph -> PnkGraph
 toNormalForm graph = do
@@ -116,7 +114,7 @@ getGraphNodes graph = do
   print nodeslist
   print edgeslist
 
-writeGraphToFile :: String -> PnkGraph -> IO ()
+writeGraphToFile :: (Show a, Show b) => String -> Gr a b -> IO ()
 writeGraphToFile name graph = do
   let dot = showDot $ fglToDot graph
   writeFile name dot
@@ -455,7 +453,6 @@ writeCppFile content = do
   appendFile filename "\n\treturn ret;\n}"
   appendFile filename "\n#endif"
   where filename = "ns3/compiled-pnk-program.h"
--- idea, do a second pass through the tree and construct another tree containing all the information (node number, parent number, instruction)
 
 getAutomatonTree' :: Int -> Int -> Tree InstNode -> (Tree AutomatonNode, Int)
 getAutomatonTree' nodenr parentnr (Node (x,y) []) = (Node (x,y, nodenr, parentnr) [], nodenr + 1)
