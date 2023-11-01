@@ -1,0 +1,31 @@
+graph {
+
+    # To refactor nodes, place the cursor left to a node name
+    a -- b
+    a -- c;
+    b -- d
+    b -- e
+    c -- f
+    c -- g
+
+    a[label="&"];
+    b[label="+"];
+    c[label="+"];
+    d[label="A"];
+    e[label="Drop"];
+    f[label="B"];
+    g[label="Drop"];
+    
+
+    # Hover over color names to get a color picker
+    // b -- b [color=blue]
+    // b -- d [color="#ff0000"];
+
+    e [color= red]
+    g [color= red]
+
+    # Get completion when assigning a shape or color
+    // b [shape=box, color=yellow];
+
+    a; # You can remove optional ; by placing the cursor left to a semicolon
+}

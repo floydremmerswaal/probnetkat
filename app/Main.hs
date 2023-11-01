@@ -53,29 +53,29 @@ type G = Gr String String
 -- Node is an Int, Context is a tuple of (pre, node, label, post)
 -- pre the incoming, post the outgoing edges
 
+-- => (Context a b -> [Node])	-- direction of fold
 di :: (Context String String -> [Node])
 di context = do
   let (_, node, _, post) = context
   let nextnodes = map snd post
   trace ("Visiting node: " ++ show node ++ " with next nodes: " ++ show nextnodes ++ " context: " ++  show context) nextnodes
 
-da :: (Context String String -> G -> G) -- identity for now (graph goes to graph)
-da context = trace ("Depth aggregation for node: " ++ show node ++ " context: " ++ show context)
+-- -> (Context a b -> c -> d) -- depth aggregation	
+da :: (Context String String -> (G, Node) -> Node) -- identity for now (graph goes to graph)
+da context (_, subnode) = trace ("Depth aggregation for node: " ++ show node ++ " context: " ++ show context) subnode
   where (_, node, _, _) = context
 
-combineGraphs :: Maybe G -> G -> G
-combineGraphs Nothing g = g
-combineGraphs (Just g1) g2 = do 
-  let nodes1 = labNodes g1
-  let edges1 = labEdges g1
-  let newnodes = insNodes nodes1 g2
-  let newedges = insEdges edges1 newnodes
-  newedges
+combineGraphs :: Maybe Node -> (G, Node) -> (G,Node)
+combineGraphs maybeNode (graph, node) = do
+  case maybeNode of
+    Nothing -> (graph, node)
+    Just jNode -> do
+      let newGraph = insNode (jNode, "node" ++ show jNode) graph
+      (newGraph, jNode)
 
--- if Maybe G is Nothing, we return the graph, otherwise we return the Maybe G
--- ba is a tuple of a function and a graph, the function takes a Maybe G and a G and returns a G
-ba :: (Maybe G -> G -> G, G)
-ba = (\maybeg g -> trace ("Breadth aggregation: " ++ show maybeg ++ ", " ++ show g) $ combineGraphs maybeg g, empty)
+-- ba :: (Maybe d -> c -> c, c)	-- breadth/level aggregation
+ba :: (Maybe Node -> (G, Node) -> (G,Node), (G,Node))
+ba = (trace "Breadth aggregation" combineGraphs, (empty, 0))
 
 testGfold :: IO ()
 testGfold = do
@@ -88,7 +88,7 @@ testGfold = do
   let g7 = insEdge (2, 0, "e3") g6
   -- write to file
   writeGraphToFile "test.dot" g7
-  writeGraphToFile "gfold.dot" $ gfold di da ba [0] g7
+  writeGraphToFile "gfold.dot" $ fst (gfold di da ba [0] g7)
 
 toNormalForm :: PnkGraph -> PnkGraph
 toNormalForm graph = do
