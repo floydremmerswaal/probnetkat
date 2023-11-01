@@ -9,8 +9,8 @@ graph {
     c -- g
 
     a[label="&"];
-    b[label="+"];
-    c[label="+"];
+    b[label="⨁"];
+    c[label="⨁"];
     d[label="A"];
     e[label="Drop"];
     f[label="B"];
@@ -29,3 +29,4 @@ graph {
 
     a; # You can remove optional ; by placing the cursor left to a semicolon
 }
+
