@@ -97,7 +97,7 @@ drop :: MonadDistribution m => KSH m
 drop = arr $ const (Set.singleton [])
 
 
--- approximate Kleene star by a finite number of iterations, lets say 10 for the moment
+-- approximate Kleene star by a finite number of iterations
 -- the paper specifies approximating by doing (skip & p)^n
 kleeneApprox :: MonadDistribution m => Integer -> KSH m -> KSH m
 kleeneApprox 0 _ = skip

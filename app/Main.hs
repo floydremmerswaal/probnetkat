@@ -25,7 +25,7 @@ import Data.Tree
 import Data.Tree.Pretty
 
 
-import Data.Graph.Inductive.Graph (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges)
+import Data.Graph.Inductive.Graph (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges, (&))
 import Data.Graph.Inductive.Basic (gfold)
 import Data.Graph.Inductive.PatriciaTree (Gr)
 
@@ -61,21 +61,38 @@ di context = do
   trace ("Visiting node: " ++ show node ++ " with next nodes: " ++ show nextnodes ++ " context: " ++  show context) nextnodes
 
 -- -> (Context a b -> c -> d) -- depth aggregation	
-da :: (Context String String -> (G, Node) -> Node) -- identity for now (graph goes to graph)
-da context (_, subnode) = trace ("Depth aggregation for node: " ++ show node ++ " context: " ++ show context) subnode
-  where (_, node, _, _) = context
+-- da :: (Context String String -> (G, Node) -> (G, Node)) -- identity for now (graph goes to graph)
+-- da context (g, _) = trace ("Depth aggregation for node: " ++ show node ++ " context: " ++ show context) (g, node) -- subnode
+--   where (_, node, _, _) = context
 
-combineGraphs :: Maybe Node -> (G, Node) -> (G,Node)
-combineGraphs maybeNode (graph, node) = do
+da :: Context String String -> G -> G -- identity for now (graph goes to graph)
+da context g =
+  trace ("Depth aggregation for graph: " ++ show g ++ " context: " ++ show context) (context & g)
+
+
+-- combineGraphs :: Maybe (G, Node) -> (G, Node) -> (G,Node)
+-- combineGraphs maybeNode (graph, node) = do
+--   case maybeNode of
+--     Nothing -> (graph, node)
+--     Just (g, jNode) -> do
+--       let newGraph = insNode (jNode, "node" ++ show jNode) graph
+--       trace ("Adding node " ++ show jNode ++ " gives " ++ show newGraph) $ (newGraph, jNode)
+
+combineGraphs :: Maybe G -> G -> G
+combineGraphs maybeNode graph =
   case maybeNode of
-    Nothing -> (graph, node)
-    Just jNode -> do
-      let newGraph = insNode (jNode, "node" ++ show jNode) graph
-      (newGraph, jNode)
+    Nothing -> graph
+    Just g ->
+      let ns = labNodes g
+          es = labEdges g
+      in trace ("Adding graph " ++ show g) $ insEdges es $ insNodes ns graph
 
 -- ba :: (Maybe d -> c -> c, c)	-- breadth/level aggregation
-ba :: (Maybe Node -> (G, Node) -> (G,Node), (G,Node))
-ba = (trace "Breadth aggregation" combineGraphs, (empty, 0))
+-- ba :: (Maybe Node -> (G, Node) -> (G,Node), (G,Node))
+-- ba = (trace "Breadth aggregation" combineGraphs, (empty, 0))
+
+ba :: (Maybe G -> G -> G, G)
+ba = (trace "Breadth aggregation" combineGraphs, empty)
 
 testGfold :: IO ()
 testGfold = do
@@ -88,7 +105,7 @@ testGfold = do
   let g7 = insEdge (2, 0, "e3") g6
   -- write to file
   writeGraphToFile "test.dot" g7
-  writeGraphToFile "gfold.dot" $ fst (gfold di da ba [0] g7)
+  writeGraphToFile "gfold.dot" $ gfold di da ba [0] g7
 
 toNormalForm :: PnkGraph -> PnkGraph
 toNormalForm graph = do
