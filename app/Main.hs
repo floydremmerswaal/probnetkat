@@ -37,7 +37,13 @@ type ParseFun a = [Token] -> Err a
 
 type Verbosity = Int
 
+data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip deriving Show
+type InstNode = (Inst, Double)
+
+type AutomatonNode = (Inst, Double, Int, Int)
+
 type PnkGraph = Gr InstNode Double
+type PnkContext = Context InstNode Double
 
 
 -- gfold :: Graph gr	 
@@ -48,64 +54,61 @@ type PnkGraph = Gr InstNode Double
 -- -> gr a b	 
 -- -> c
 
-type G = Gr String String
-
 -- Node is an Int, Context is a tuple of (pre, node, label, post)
 -- pre the incoming, post the outgoing edges
 
 -- => (Context a b -> [Node])	-- direction of fold
-di :: (Context String String -> [Node])
+di :: (PnkContext -> [Node])
 di context = do
   let (_, node, _, post) = context
   let nextnodes = map snd post
   trace ("Visiting node: " ++ show node ++ " with next nodes: " ++ show nextnodes ++ " context: " ++  show context) nextnodes
 
--- -> (Context a b -> c -> d) -- depth aggregation	
--- da :: (Context String String -> (G, Node) -> (G, Node)) -- identity for now (graph goes to graph)
--- da context (g, _) = trace ("Depth aggregation for node: " ++ show node ++ " context: " ++ show context) (g, node) -- subnode
---   where (_, node, _, _) = context
-
-da :: Context String String -> G -> G -- identity for now (graph goes to graph)
+-- da :: (Context a b -> c -> d) -- depth aggregation	
+-- The function takes a context, and combines it with the accumulated value (c),
+-- returning a possibly different type (d).
+da :: PnkContext -> PnkGraph -> PnkGraph -- for now, merge the context into the graph
 da context g =
   trace ("Depth aggregation for graph: " ++ show g ++ " context: " ++ show context) (context & g)
 
-
--- combineGraphs :: Maybe (G, Node) -> (G, Node) -> (G,Node)
--- combineGraphs maybeNode (graph, node) = do
---   case maybeNode of
---     Nothing -> (graph, node)
---     Just (g, jNode) -> do
---       let newGraph = insNode (jNode, "node" ++ show jNode) graph
---       trace ("Adding node " ++ show jNode ++ " gives " ++ show newGraph) $ (newGraph, jNode)
-
-combineGraphs :: Maybe G -> G -> G
-combineGraphs maybeNode graph =
-  case maybeNode of
-    Nothing -> graph
-    Just g ->
+-- Maybe d -> c -> c
+combineGraphs :: Maybe PnkGraph -> PnkGraph -> PnkGraph -- insert the nodes and edges of the maybeGraph into the graph
+combineGraphs maybeGraph graph =
+  case maybeGraph of
+    Nothing -> graph -- Nothing case shouldn't happen, but we have to account for it
+    Just g -> do 
       let ns = labNodes g
-          es = labEdges g
-      in trace ("Adding graph " ++ show g) $ insEdges es $ insNodes ns graph
+      let es = labEdges g
+      trace ("Adding graph " ++ show g ++ "\ngraph = " ++ show graph) $ insEdges es $ insNodes ns graph
 
 -- ba :: (Maybe d -> c -> c, c)	-- breadth/level aggregation
--- ba :: (Maybe Node -> (G, Node) -> (G,Node), (G,Node))
--- ba = (trace "Breadth aggregation" combineGraphs, (empty, 0))
-
-ba :: (Maybe G -> G -> G, G)
+ba :: (Maybe PnkGraph -> PnkGraph -> PnkGraph, PnkGraph)
 ba = (trace "Breadth aggregation" combineGraphs, empty)
 
 testGfold :: IO ()
 testGfold = do
-  let g = empty :: Gr String String
-  let g2 = insNode (0, "a") g
-  let g3 = insNode (1, "b") g2
-  let g4 = insNode (2, "c") g3
-  let g5 = insEdge (0, 1, "e1") g4
-  let g6 = insEdge (1, 2, "e2") g5
-  let g7 = insEdge (2, 0, "e3") g6
+  let g = empty :: PnkGraph
+  let g2 = insNode (0, (AssSw, 1.0)) g
+  let g3 = insNode (1, (AssPt, 2.0)) g2
+  let g4 = insNode (2, (Par, 0.0)) g3
+  let g5 = insNode (3, (Prob, 0.5)) g4
+  let g6 = insNode (4, (Prob, 0.5)) g5
+  let g7 = insNode (5, (Skip, 0.0)) g6
+  let g8 = insNode (6, (Skip, 0.0)) g7
+  let g9 = insNode (7, (Skip, 0.0)) g8
+  let g10 = insNode (8, (Skip, 0.0)) g9
+
+  let g11 = insEdge (0, 1, 1.0) g10
+  let g12 = insEdge (1, 2, 1.0) g11
+  let g13 = insEdge (2, 3, 1.0) g12
+  let g14 = insEdge (2, 4, 1.0) g13
+  let g15 = insEdge (3, 5, 0.5) g14
+  let g16 = insEdge (3, 6, 0.5) g15
+  let g17 = insEdge (4, 7, 0.5) g16
+  let g18 = insEdge (4, 8, 0.5) g17  
   -- write to file
-  writeGraphToFile "test.dot" g7
-  writeGraphToFile "gfold.dot" $ gfold di da ba [0] g7
+  writeGraphToFile "test.dot" g18
+  writeGraphToFile "gfold.dot" $ gfold di da ba [0] g18
 
 toNormalForm :: PnkGraph -> PnkGraph
 toNormalForm graph = do
@@ -369,10 +372,7 @@ interference fs = do
       putStrLn "Function output:"
       prettyPrintSHD samples
 
-data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip deriving Show
-type InstNode = (Inst, Double)
 
-type AutomatonNode = (Inst, Double, Int, Int)
 
 
 instrToCppString :: Int -> Int -> InstNode -> String
