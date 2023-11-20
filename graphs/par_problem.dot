@@ -1,12 +1,12 @@
-graph {
+digraph {
 
     # To refactor nodes, place the cursor left to a node name
-    a -- b
-    a -- c;
-    b -- d
-    b -- e
-    c -- f
-    c -- g
+    a -> b
+    a -> c;
+    b -> d
+    b -> e
+    c -> f
+    c -> g
 
     a[label="&"];
     b[label="⨁"];
