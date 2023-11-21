@@ -23,6 +23,7 @@ import Syntax.ErrM
 
 import Data.Tree
 import Data.Tree.Pretty
+import Data.Maybe (fromMaybe)
 
 
 import Data.Graph.Inductive.Graph (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges, (&))
@@ -32,6 +33,7 @@ import Data.Graph.Inductive.PatriciaTree (Gr)
 import Data.Graph.Inductive.Dot (fglToDot, showDot)
 
 import Debug.Trace
+import Text.Read (readMaybe)
 
 type ParseFun a = [Token] -> Err a
 
@@ -76,7 +78,7 @@ combineGraphs :: Maybe PnkGraph -> PnkGraph -> PnkGraph -- insert the nodes and 
 combineGraphs maybeGraph graph =
   case maybeGraph of
     Nothing -> graph -- Nothing case shouldn't happen, but we have to account for it
-    Just g -> do 
+    Just g -> do
       let ns = labNodes g
       let es = labEdges g
       trace ("Adding graph " ++ show g ++ "\ngraph = " ++ show graph) $ insEdges es $ insNodes ns graph
@@ -105,7 +107,7 @@ testGfold = do
   let g15 = insEdge (3, 5, 0.5) g14
   let g16 = insEdge (3, 6, 0.5) g15
   let g17 = insEdge (4, 7, 0.5) g16
-  let g18 = insEdge (4, 8, 0.5) g17  
+  let g18 = insEdge (4, 8, 0.5) g17
   -- write to file
   writeGraphToFile "test.dot" g18
   writeGraphToFile "gfold.dot" $ gfold di da ba [0] g18
@@ -322,12 +324,12 @@ usage :: IO ()
 usage = do
   putStrLn $ unlines
     [ "Call with one of the following argument combinations:"
-    , "  --help           Display this help message."
-    , "  -g               Test gfold"
-    , "  -i (file)        Run interference on program"
-    , "  -c (file)        Compile program to NS-3 C++"
-    , "  -p (file)        Attempt to parse program"
-    , "  -t (file)        Attempt to parse program and show the resulting tree"
+    , "  --help             Display this help message."
+    , "  -g                 Test gfold"
+    , "  -i (file) (input)  Run inference on program"
+    , "  -c (file)          Compile program to NS-3 C++"
+    , "  -p (file)          Attempt to parse program"
+    , "  -t (file)          Attempt to parse program and show the resulting tree"
     ]
 
 main :: IO ()
@@ -337,7 +339,7 @@ main = do
     ["--help"] -> usage
     "-g":_ -> testGfold
     "-p":fs    -> mapM_ (runFile 0 pExp) fs
-    "-i":fs  -> interference fs
+    "-i":fs  -> inference fs
     "-c":fs    -> createAutomaton fs
     "-t":fs    -> mapM_ (runFile 2 pExp) fs
     fs         -> mapM_ (runFile 2 pExp) fs
@@ -349,8 +351,8 @@ prettyPrintSHD ((sh, d):xs) = do
   putStrLn $ printf "%.2f" (d * 100) ++ "%" ++ " : " ++ show sh
   prettyPrintSHD xs
 
-interference :: [String] ->  IO ()
-interference fs = do
+inference :: [String] ->  IO ()
+inference fs = do
   putStrLn "test"
   s <- readFile (head fs)
   let ts = myLexer s
@@ -362,15 +364,14 @@ interference fs = do
     Right tree -> do
       putStrLn "\nParse Successful!"
       print tree
-      let packet = (1,1) :: Packet
-      let history = [packet] :: History
-      let initialSet = Set.fromList [history] :: SH
+      let initialSet = Set.fromList input :: SH
       let kleisliArrow = transExp tree ::  Kleisli Enumerator SH SH
       putStrLn "Function is defined"
       let result = runKleisli kleisliArrow initialSet
       let samples = enumerator result
       putStrLn "Function output:"
       prettyPrintSHD samples
+  where input = Data.Maybe.fromMaybe [[(0, 0)]] (readMaybe (head (tail fs))) -- if no input is given, use [[(0, 0)]]
 
 
 
@@ -441,7 +442,7 @@ appendToLeaves (Node (x,y) [leftTree]) someSubTree = do
   Node (x,y) [newLeftTree]
 appendToLeaves (Node (x,y) (leftTree:rightTree)) someSubTree = do
   let newLeftTree = appendToLeaves leftTree someSubTree
-  let newRightTree = appendToLeaves (head rightTree)someSubTree
+  let newRightTree = appendToLeaves (head rightTree) someSubTree
   Node (x,y) [newLeftTree, newRightTree]
 
 
