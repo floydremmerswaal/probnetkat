@@ -19,12 +19,16 @@ import Control.Arrow
 
 import Control.Monad.Bayes.Enumerator
 
+import Control.Monad.Bayes.Sampler.Strict
+import Control.Monad (replicateM)
+
 import Syntax.ErrM
 
 import Data.Tree
 import Data.Tree.Pretty
 import Data.Maybe (fromMaybe)
 
+import qualified Data.MultiSet as Mset
 
 import Data.Graph.Inductive.Graph (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges, (&))
 import Data.Graph.Inductive.Basic (gfold)
@@ -345,14 +349,43 @@ main = do
     fs         -> mapM_ (runFile 2 pExp) fs
 
 
+prettyPrintSingleSHD :: (SH, Double) -> IO ()
+prettyPrintSingleSHD (sh, d) = do
+  putStrLn $ printf "%.2f" (d * 100) ++ "%" ++ " : " ++ show sh
+
 prettyPrintSHD :: [(SH, Double)] -> IO ()
 prettyPrintSHD [] = return ()
 prettyPrintSHD ((sh, d):xs) = do
-  putStrLn $ printf "%.2f" (d * 100) ++ "%" ++ " : " ++ show sh
+  prettyPrintSingleSHD (sh, d)
   prettyPrintSHD xs
+
+-- prettyPrintSHI normalizes the probabilities and calls prettyPrintSHD
+prettyPrintSHI :: Int -> [(SH, Int)] -> IO ()
+prettyPrintSHI _ [] = return ()
+prettyPrintSHI total ((sh, i):xs) = do
+  let d = fromIntegral i / fromIntegral total
+  prettyPrintSingleSHD (sh, d)
+  prettyPrintSHI total xs
 
 -- we could make a 'pure' version of this function that returns the result of the runKleisli
 -- which could then be sampled from
+-- input is now essentially a dirac delta on a list of samples, but we could make it a distribution
+
+printOccurList :: (Show a) => [(a, Int)] -> IO ()
+printOccurList [] = return ()
+printOccurList ((x, y):xs) = do
+  putStrLn $ show x ++ " : " ++ show y
+  printOccurList xs
+
+printAsMultiSet :: [SH] -> IO ()
+printAsMultiSet input = do
+  let multiset = Mset.fromList input
+  let occurlist = Mset.toOccurList multiset
+
+  print multiset
+  prettyPrintSHI 10000 occurlist
+  
+
 inference :: [String] ->  IO ()
 inference fs = do
   s <- readFile (head fs)
@@ -366,11 +399,14 @@ inference fs = do
       putStrLn "\nRunning inference."
       print tree
       let initialSet = Set.fromList input :: SH
-      let kleisliArrow = transExp tree ::  Kleisli Enumerator SH SH
+      let kleisliArrow = transExp tree ::  Kleisli SamplerIO SH SH
       let result = runKleisli kleisliArrow initialSet
-      let samples = enumerator result
+      samples <- sampleIOfixed $ replicateM 10000 result
       putStrLn "Function output:"
-      prettyPrintSHD samples
+      printAsMultiSet samples
+      -- prettyPrintSHD samples
+      -- print out the samples
+      
   where input = Data.Maybe.fromMaybe [[(0, 0)]] (readMaybe (head (tail fs))) -- if no input is given, use [[(0, 0)]]
 
 

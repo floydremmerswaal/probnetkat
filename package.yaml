@@ -32,6 +32,7 @@ dependencies:
   - pretty-tree
   - fgl
   - fgl-visualize >= 0.1.0.1
+  - multiset
 
 ghc-options:
   - -Wall

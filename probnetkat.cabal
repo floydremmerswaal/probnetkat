@@ -50,6 +50,7 @@ library
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
+    , multiset
     , pretty-tree
   default-language: Haskell2010
 
@@ -72,6 +73,7 @@ executable probnetkat-exe
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
+    , multiset
     , pretty-tree
     , probnetkat
   default-language: Haskell2010
@@ -94,6 +96,7 @@ test-suite probnetkat-test
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
+    , multiset
     , pretty-tree
     , probnetkat
   default-language: Haskell2010
