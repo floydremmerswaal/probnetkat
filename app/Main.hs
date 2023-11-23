@@ -351,9 +351,10 @@ prettyPrintSHD ((sh, d):xs) = do
   putStrLn $ printf "%.2f" (d * 100) ++ "%" ++ " : " ++ show sh
   prettyPrintSHD xs
 
+-- we could make a 'pure' version of this function that returns the result of the runKleisli
+-- which could then be sampled from
 inference :: [String] ->  IO ()
 inference fs = do
-  putStrLn "test"
   s <- readFile (head fs)
   let ts = myLexer s
   case pExp ts of
@@ -362,11 +363,10 @@ inference fs = do
       putStrLn err
       exitFailure
     Right tree -> do
-      putStrLn "\nParse Successful!"
+      putStrLn "\nRunning inference."
       print tree
       let initialSet = Set.fromList input :: SH
       let kleisliArrow = transExp tree ::  Kleisli Enumerator SH SH
-      putStrLn "Function is defined"
       let result = runKleisli kleisliArrow initialSet
       let samples = enumerator result
       putStrLn "Function output:"
