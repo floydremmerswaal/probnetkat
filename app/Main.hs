@@ -328,12 +328,13 @@ usage :: IO ()
 usage = do
   putStrLn $ unlines
     [ "Call with one of the following argument combinations:"
-    , "  --help             Display this help message."
-    , "  -g                 Test gfold"
-    , "  -i (file) (input)  Run inference on program"
-    , "  -c (file)          Compile program to NS-3 C++"
-    , "  -p (file)          Attempt to parse program"
-    , "  -t (file)          Attempt to parse program and show the resulting tree"
+    , "  --help               Display this help message."
+    , "  -g                   Test gfold"
+    , "  -ie (file) (input)  Run exact inference on program"
+    , "  -is (file) (input)  Run sample inference on program"
+    , "  -c (file)            Compile program to NS-3 C++"
+    , "  -p (file)            Attempt to parse program"
+    , "  -t (file)            Attempt to parse program and show the resulting tree"
     ]
 
 main :: IO ()
@@ -343,7 +344,8 @@ main = do
     ["--help"] -> usage
     "-g":_ -> testGfold
     "-p":fs    -> mapM_ (runFile 0 pExp) fs
-    "-i":fs  -> inference fs
+    "-ie":fs  -> inference fs
+    "-is":fs  -> inferenceSample fs
     "-c":fs    -> createAutomaton fs
     "-t":fs    -> mapM_ (runFile 2 pExp) fs
     fs         -> mapM_ (runFile 2 pExp) fs
@@ -397,6 +399,26 @@ inference fs = do
       exitFailure
     Right tree -> do
       putStrLn "\nRunning inference."
+      print tree
+      let initialSet = Set.fromList input :: SH
+      let kleisliArrow = transExp tree ::  Kleisli Enumerator SH SH
+      let result = runKleisli kleisliArrow initialSet
+      let samples = enumerator result
+      putStrLn "Function output:"
+      prettyPrintSHD samples
+  where input = Data.Maybe.fromMaybe [[(0, 0)]] (readMaybe (head (tail fs))) -- if no input is given, use [[(0, 0)]]
+
+inferenceSample :: [String] ->  IO ()
+inferenceSample fs = do
+  s <- readFile (head fs)
+  let ts = myLexer s
+  case pExp ts of
+    Left err -> do
+      putStrLn "\nParse Failed...\n"
+      putStrLn err
+      exitFailure
+    Right tree -> do
+      putStrLn "\n Sampling inference."
       print tree
       let initialSet = Set.fromList input :: SH
       let kleisliArrow = transExp tree ::  Kleisli SamplerIO SH SH
