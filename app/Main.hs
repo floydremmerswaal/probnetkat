@@ -353,7 +353,7 @@ main = do
 
 prettyPrintSingleSHD :: (SH, Double) -> IO ()
 prettyPrintSingleSHD (sh, d) = do
-  putStrLn $ printf "%.2f" (d * 100) ++ "%" ++ " : " ++ show sh
+  putStrLn $ printf "%.2f" (d * 100) ++ "%" ++ " : " ++ show (Set.toList sh)
 
 prettyPrintSHD :: [(SH, Double)] -> IO ()
 prettyPrintSHD [] = return ()

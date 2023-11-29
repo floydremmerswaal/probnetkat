@@ -33,19 +33,13 @@ dupHead :: History -> History
 dupHead [] = []
 dupHead (x:xs) = [x,x] ++ xs
 
-changeSw' :: Integer -> Packet -> Packet
-changeSw' i (_,y) = (i,y)
-
 changeSw :: Integer -> History -> History
 changeSw _ [] = []
-changeSw i (x:xs) = changeSw' i x : xs
-
-changePt' :: Integer -> Packet -> Packet
-changePt' i (x,_) = (x,i)
+changeSw i ((_,y):xs) = (i,y) : xs
 
 changePt :: Integer -> History -> History
 changePt _ [] = []
-changePt i (x:xs) = changePt' i x : xs
+changePt i ((x,_):xs) = (x,i) : xs
 
 assignSw :: MonadDistribution m => Integer -> KSH m
 assignSw s = arr $ Set.map (changeSw s)
@@ -101,10 +95,10 @@ drop = arr $ const (Set.singleton [])
 -- the paper specifies approximating by doing (skip & p)^n
 kleeneApprox :: MonadDistribution m => Integer -> KSH m -> KSH m
 kleeneApprox 0 _ = skip
-kleeneApprox n p = skip `par` (seq p (kleeneApprox (n-1) p)) 
+kleeneApprox n p = skip `par` seq p (kleeneApprox (n-1) p)
 
 kleene :: MonadDistribution m => KSH m -> KSH m
-kleene = kleeneApprox 10
+kleene = kleeneApprox 5
 
 ----------- Other operators
 
