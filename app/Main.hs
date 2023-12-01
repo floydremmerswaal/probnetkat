@@ -18,26 +18,36 @@ import Text.Printf
 import Control.Arrow
 
 import Control.Monad.Bayes.Enumerator
-
 import Control.Monad.Bayes.Sampler.Strict
-import Control.Monad (replicateM)
+import Control.Monad.State
+import Control.Monad.Reader
 
-import Syntax.ErrM
+import Text.Read (readMaybe)
 
-import Data.Tree
-import Data.Tree.Pretty
+import Data.Maybe (fromJust)
+import qualified Data.IntMap.Strict as Map
+import Data.IntMap.Strict (IntMap)
+import Data.List (partition)
+
 import Data.Maybe (fromMaybe)
 
 import qualified Data.MultiSet as Mset
 
-import Data.Graph.Inductive.Graph (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges, (&))
+import Syntax.ErrM
+
+import Data.Tree as Tr
+import Data.Tree.Pretty
+import Data.Tuple.Extra (snd3, thd3)
+
+
+import Data.Graph.Inductive.Graph -- (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges, (&))
 import Data.Graph.Inductive.Basic (gfold)
 import Data.Graph.Inductive.PatriciaTree (Gr)
+import Data.Graph.Inductive.Query.DFS
 
 import Data.Graph.Inductive.Dot (fglToDot, showDot)
 
 import Debug.Trace
-import Text.Read (readMaybe)
 
 type ParseFun a = [Token] -> Err a
 
@@ -64,58 +74,236 @@ type PnkContext = Context InstNode Double
 -- pre the incoming, post the outgoing edges
 
 -- => (Context a b -> [Node])	-- direction of fold
-di :: (PnkContext -> [Node])
-di context = do
-  let (_, node, _, post) = context
+orderNormalise :: PnkContext -> [Node]
+orderNormalise ctx = do
+  let (_, node, _, post) = ctx
   let nextnodes = map snd post
-  trace ("Visiting node: " ++ show node ++ " with next nodes: " ++ show nextnodes ++ " context: " ++  show context) nextnodes
+  trace ("Visiting node: " ++ show node ++ " with next nodes: " ++ show nextnodes ++ " context: " ++  show ctx) nextnodes
 
--- da :: (Context a b -> c -> d) -- depth aggregation	
--- The function takes a context, and combines it with the accumulated value (c),
--- returning a possibly different type (d).
-da :: PnkContext -> PnkGraph -> PnkGraph -- for now, merge the context into the graph
-da context g =
-  trace ("Depth aggregation for graph: " ++ show g ++ " context: " ++ show context) (context & g)
+-- -- da :: (Context a b -> c -> d) -- depth aggregation	
+-- -- The function takes a context, and combines it with the accumulated value (c),
+-- -- returning a possibly different type (d).
+-- da :: PnkContext -> PnkGraph -> PnkGraph -- for now, merge the context into the graph
+-- da context g =
+--   trace ("Depth aggregation for graph: " ++ show g ++ " context: " ++ show context) (context & g)
 
--- Maybe d -> c -> c
-combineGraphs :: Maybe PnkGraph -> PnkGraph -> PnkGraph -- insert the nodes and edges of the maybeGraph into the graph
-combineGraphs maybeGraph graph =
-  case maybeGraph of
-    Nothing -> graph -- Nothing case shouldn't happen, but we have to account for it
-    Just g -> do
-      let ns = labNodes g
-      let es = labEdges g
-      trace ("Adding graph " ++ show g ++ "\ngraph = " ++ show graph) $ insEdges es $ insNodes ns graph
+-- -- Maybe d -> c -> c
+-- combineGraphs :: Maybe PnkGraph -> PnkGraph -> PnkGraph -- insert the nodes and edges of the maybeGraph into the graph
+-- combineGraphs maybeGraph graph =
+--   case maybeGraph of
+--     Nothing -> graph -- Nothing case shouldn't happen, but we have to account for it
+--     Just g -> do 
+--       let ns = labNodes g
+--       let es = labEdges g
+--       trace ("Adding graph " ++ show g ++ "\ngraph = " ++ show graph) $ insEdges es $ insNodes ns graph
 
--- ba :: (Maybe d -> c -> c, c)	-- breadth/level aggregation
-ba :: (Maybe PnkGraph -> PnkGraph -> PnkGraph, PnkGraph)
-ba = (trace "Breadth aggregation" combineGraphs, empty)
+-- -- ba :: (Maybe d -> c -> c, c)	-- breadth/level aggregation
+-- ba :: (Maybe PnkGraph -> PnkGraph -> PnkGraph, PnkGraph)
+-- ba = (trace "Breadth aggregation" combineGraphs, empty)
+
+testNodes1 :: [LNode InstNode]
+testNodes1 =
+  [ (0, (AssSw, 1.0))
+  , (1, (AssPt, 2.0))
+  , (2, (Par, 0.0))
+  , (3, (Prob, 0.5))
+  , (4, (Prob, 0.5))
+  , (5, (Skip, 0.0))
+  , (6, (Skip, 0.0))
+  , (7, (Skip, 0.0))
+  , (8, (Skip, 0.0))
+  ]
+
+testEdges1 :: [LEdge Double]
+testEdges1 =
+  [ (0, 1, 1.0)
+  , (1, 2, 1.0)
+  , (2, 3, 1.0)
+  , (2, 4, 1.0)
+  , (3, 5, 0.4)
+  , (3, 6, 0.6)
+  , (4, 7, 0.3)
+  , (4, 8, 0.7)
+  , (8, 0, 1.0)
+  , (2, 0, 1.0)
+  ]
+
+test1 :: PnkGraph
+test1 = mkGraph testNodes1 testEdges1
+
+test1Tree :: Tree PnkContext
+test1Tree = head $ xdffWith suc' id [0] test1
+
+
+-- | Lifts gfold to monadic operations
+-- (and eliminates Maybe from breadth aggregation, or is that too dangerous?)
+gfoldM :: (Graph gr, Monad m) =>
+  (Context a b -> [Node])      -- ^ direction of fold
+  -> (Context a b -> c -> m d) -- ^ depth aggregation
+  -> (d -> c -> m c, c)        -- ^ breadth/level aggregation
+  -> [Node]
+  -> gr a b
+  -> m c
+gfoldM di da (ba, b0) = gfold di daM (baM, pure b0)
+  where
+    -- daM :: Context a b -> m c -> m d
+    daM ctx = (=<<) (da ctx)
+    -- baM :: Maybe (m d) -> m c -> m c
+    baM maybeMD = \mc -> fromJust maybeMD >>= \d -> mc >>= ba d
+
+-- | State of automaton normalisation
+data NormalisationState = NormalisationState
+  { nextNode :: Int           -- ^ Next node name to be generated
+  , origin :: IntMap [Node]   -- ^ Tracks the nodes that have been generated for an old node
+  }
+
+-- | Initial state for normalisation
+normInit :: NormalisationState
+normInit = NormalisationState 0 Map.empty
+
+-- | Monad used for automaton normalisation
+type NormM = State NormalisationState
+
+-- | Monadic fold for trees
+foldTreeM :: Monad m => (a -> [b] -> m b) -> Tree a -> m b
+foldTreeM f = foldTree $ \a ml -> sequence ml >>= f a
+
+-- | Generate a fresh node name
+genNode :: NormM Node
+genNode = state $ \s -> (nextNode s, s{nextNode = nextNode s + 1})
+
+-- | Saves the reference from the old to the new node name
+setOrigin :: Node -> Node -> NormM ()
+setOrigin orig new = modify $ \s -> s{ origin = Map.insertWith (++) orig [new] (origin s) }
+
+-- | Retrieves the new names that were generated for a node n
+getMapped :: Node -> NormM [Node]
+getMapped n = gets (Map.findWithDefault [] n . origin)
+
+-- | Context of only incoming edges.
+type InCtx = (Adj Double, Node, InstNode)
+
+-- | Label used in the spanning tree of an automaton.
+-- The list in the second components contains the weights for the children of a node.
+type SpLab = (InCtx, [Double])
+
+-- | Spanning tree of an automaton.
+-- Careful: the weights of edges are stored in a list in the parent node. This is not the safest
+-- option but otherwise a tree type with labels on the edges is needed.
+type SpTree = Tree SpLab
+
+-- | Label of the root in a spanning tree
+rootLabel' :: SpTree -> InCtx
+rootLabel' = fst . rootLabel
+
+-- | Returns the children of the root of a given tree with the edge weights.
+subForest' :: SpTree -> [(Double, SpTree)]
+subForest' t = zip (snd $ rootLabel t) $ subForest t
+
+-- | Computes the spanning tree of the given automaton from the designated root node r.
+-- It is assumed that r is in the given graph, otherwise the function leads to an unrecoverable
+-- error.
+automToTree :: Node -> PnkGraph -> SpTree
+automToTree r =
+  head . xdffWith suc' (\(inAdj, n, l, outAdj) -> ((inAdj, n, l), fmap fst outAdj)) [r]
+
+-- | Merges a non-deterministic choice down into the given forest.
+-- The first list of children must be the probabilistic nodes and the other
+-- list the remaining ones.
+mergeDown :: InCtx -> ([(Double, SpTree)], [(Double, SpTree)]) -> NormM (SpTree)
+mergeDown (inAdj, n, instr) ([], remChildren) =  do
+  n' <- genNode
+  setOrigin n n'
+  let (ws, ch) = unzip remChildren
+  pure $ Tr.Node ((inAdj, n', instr), ws) ch
+mergeDown ctx ((w, probTree) : probTrees, remChildren) = do
+  let (ws, f) = unzip $ subForest' probTree
+  let ts1 = zip (repeat w) f
+  ts <- mapM (\probTreeCh -> mergeDown ctx (probTrees, remChildren ++ [probTreeCh])) ts1
+  let (inAdj, n, instr) = rootLabel' probTree
+  n' <- genNode
+  setOrigin n n'
+  pure $ Tr.Node ((inAdj, n', instr), ws) ts
+
+-- | Tests if the edge points to a tree that has a probabilistic choice at the root.
+isProb :: (Double, SpTree) -> Bool
+isProb (_, t) = case thd3 (rootLabel' t) of
+  (Prob, _) -> True
+  _         -> False
+
+-- | Implements on step of the normalisation procedure.
+-- Essentially checks if we are currently at a non-deterministic choice nodes and
+-- merges that down the tree.
+normStep :: SpLab -> [SpTree] -> NormM (SpTree)
+normStep ((inAdj, n, instr), ws)    [] = do
+  n' <- genNode
+  setOrigin n n'
+  pure $ Tr.Node ((inAdj, n', instr), ws) []
+normStep (ctx@(_, _, (Par, _)), ws) ts = mergeDown ctx (partition isProb $ zip ws ts)
+normStep ((inAdj, n, instr), ws)    ts =  do
+  n' <- genNode
+  setOrigin n n'
+  pure $ Tr.Node ((inAdj, n', instr), ws) ts
+
+-- | Normalise spanning tree of automaton by distributing probabilistic choice up over
+-- non-deterministic choice.
+-- Edges that are not in the tree but in the labels are considered recursive edges and are not
+-- touched.
+normTree :: SpTree -> NormM (SpTree)
+normTree = foldTreeM normStep
+
+-- | Transforms a tree back into an automaton.
+treeToAutom :: SpTree -> PnkGraph
+treeToAutom = uncurry insEdges . fmap buildGr . foldTree merge
+  where
+    merge :: SpLab -> [([LEdge Double], [PnkContext])] -> ([LEdge Double], [PnkContext])
+    merge ((inAdj, n, l), ws) a =
+      let (es, ch) = sequence a :: ([LEdge Double], [[PnkContext]])
+          inEdges = fmap (\(w, k) -> (k, n, w)) inAdj
+          outAdj = zip ws $ fmap (node' . head) ch
+      in (inEdges ++ es, ([], n, l, outAdj) : join ch) -- foldr merge1 ([], empty)
+
+-- | Given a tree of in-contexts where the incoming edges are referring to nodes before the normTree
+-- has been run on the tree, change the node references to those generated by normTree in the state.
+updateInEdges :: SpTree -> NormM (SpTree)
+updateInEdges = mapM upd
+  where
+    upd :: SpLab -> NormM SpLab
+    upd ((inAdj, n, instr), ws) = mapM updAdj inAdj >>= \inAdjs -> pure ((join inAdjs, n, instr), ws)
+
+    updAdj :: (Double, Node) -> NormM [(Double, Node)]
+    updAdj (w, k) = fmap ((,) w) <$> getMapped k
+
+-- depthAggrNormalise :: Context InstNode Double -> PnkGraph -> NormM NormInterGraph
+-- depthAggrNormalise ctx@(ie, n, l, oe) g = do
+--   n' <- genNode
+--   -- setOrigin n n'
+--   -- (mappedO, unmappedO) <- getMapped oe
+--   trace ("Depth aggregation for graph: " ++ show g ++ " context: " ++ show ctx) (pure $ ctx & g)
+
+-- breadthAggrNormalise :: NormInterGraph -> PnkGraph -> NormM PnkGraph
+-- breadthAggrNormalise g graph =
+--   let ns = labNodes g
+--       es = labEdges g
+--   in trace ("Adding graph " ++ show g ++ "\ngraph = " ++ show graph) (pure $ insEdges es $ insNodes ns graph)
+
+-- normalise :: PnkGraph -> Node -> PnkGraph
+-- normalise g r =
+--   evalState (gfoldM orderNormalise depthAggrNormalise (breadthAggrNormalise, empty) [r] g) normInit
+
+-- normalise :: PnkGraph -> Node -> PnkGraph
+-- normalise g r = _
 
 testGfold :: IO ()
 testGfold = do
-  let g = empty :: PnkGraph
-  let g2 = insNode (0, (AssSw, 1.0)) g
-  let g3 = insNode (1, (AssPt, 2.0)) g2
-  let g4 = insNode (2, (Par, 0.0)) g3
-  let g5 = insNode (3, (Prob, 0.5)) g4
-  let g6 = insNode (4, (Prob, 0.5)) g5
-  let g7 = insNode (5, (Skip, 0.0)) g6
-  let g8 = insNode (6, (Skip, 0.0)) g7
-  let g9 = insNode (7, (Skip, 0.0)) g8
-  let g10 = insNode (8, (Skip, 0.0)) g9
-
-  let g11 = insEdge (0, 1, 1.0) g10
-  let g12 = insEdge (1, 2, 1.0) g11
-  let g13 = insEdge (2, 3, 1.0) g12
-  let g14 = insEdge (2, 4, 1.0) g13
-  let g15 = insEdge (3, 5, 0.5) g14
-  let g16 = insEdge (3, 6, 0.5) g15
-  let g17 = insEdge (4, 7, 0.5) g16
-  let g18 = insEdge (4, 8, 0.5) g17
+  let t = automToTree 0 test1
+  putStrLn $ drawTree $ fmap show t
+  let t' = evalState (normTree t >>= updateInEdges) normInit
+  putStrLn $ drawTree $ fmap show t'
+  let g' = treeToAutom t'
   -- write to file
-  writeGraphToFile "test.dot" g18
-  writeGraphToFile "gfold.dot" $ gfold di da ba [0] g18
-
+  writeGraphToFile "test.dot" test1
+  writeGraphToFile "gfold.dot" g'
 toNormalForm :: PnkGraph -> PnkGraph
 toNormalForm graph = do
   -- in normal form, we push the PROB nodes to the root, and we push the SEQ to the leaves

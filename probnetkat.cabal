@@ -45,11 +45,13 @@ library
       array
     , base >=4.7 && <5
     , containers
+    , extra
     , fgl
     , fgl-visualize >=0.1.0.1
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
+    , mtl
     , multiset
     , pretty-tree
   default-language: Haskell2010
@@ -68,11 +70,13 @@ executable probnetkat-exe
       array
     , base >=4.7 && <5
     , containers
+    , extra
     , fgl
     , fgl-visualize >=0.1.0.1
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
+    , mtl
     , multiset
     , pretty-tree
     , probnetkat
@@ -90,12 +94,14 @@ test-suite probnetkat-test
       array
     , base >=4.7 && <5
     , containers
+    , extra
     , fgl
     , fgl-visualize >=0.1.0.1
     , hspec
     , log-domain >=0.13.2
     , monad-bayes >=1.1.0
     , monad-extras >=0.6.0
+    , mtl
     , multiset
     , pretty-tree
     , probnetkat

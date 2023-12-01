@@ -7,6 +7,8 @@ import Control.Arrow
 import Control.Category ( Category(id) )
 import Control.Applicative (liftA2)
 
+import Data.Function (fix)
+
 import qualified Data.Set as Set
 import Data.Set (Set)
 
@@ -98,7 +100,16 @@ kleeneApprox 0 _ = skip
 kleeneApprox n p = skip `par` seq p (kleeneApprox (n-1) p)
 
 kleene :: MonadDistribution m => KSH m -> KSH m
-kleene = kleeneApprox 5
+kleene = kleeneApprox 6
+
+-- do kleeneApprox repetitions until we reach a fixpoint
+
+
+kleeneRec :: MonadDistribution m => KSH m -> KSH m
+kleeneRec p = skip `par` seq p (kleeneRec p)
+
+-- kleeneRecFix :: MonadDistribution m => KSH m -> KSH m
+-- kleeneRecFix = loop kleeneRec
 
 ----------- Other operators
 
