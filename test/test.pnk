@@ -1,1 +1,1 @@
-dup ; dup ; dup ; sw <- 1 & sw <- 2
+dup ; sw <- 1 & sw <- 2

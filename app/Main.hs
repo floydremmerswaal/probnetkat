@@ -128,8 +128,34 @@ testEdges1 =
   , (2, 0, 1.0)
   ]
 
+simpleTest :: [LNode InstNode]
+simpleTest = 
+  [
+    (0, (Par, 1.0))
+  , (1, (Prob, 0.3))
+  , (2, (Prob, 0.6))
+  , (3, (AssSw, 3.0))
+  , (4, (AssPt, 4.0))
+  , (5, (AssPt, 5.0))
+  , (6, (AssSw, 6.0))
+  ]
+
+simpleTestEdges :: [LEdge Double] 
+simpleTestEdges = 
+  [
+    (0, 1, 1.0)
+  , (0, 2, 1.0)
+  , (1, 3, 0.3)
+  , (1, 4, 0.7)
+  , (2, 5, 0.6)
+  , (2, 6, 0.4)
+  ]
+
 test1 :: PnkGraph
 test1 = mkGraph testNodes1 testEdges1
+
+testSimple :: PnkGraph
+testSimple = mkGraph simpleTest simpleTestEdges
 
 test1Tree :: Tree PnkContext
 test1Tree = head $ xdffWith suc' id [0] test1
@@ -296,25 +322,29 @@ updateInEdges = mapM upd
 
 testGfold :: IO ()
 testGfold = do
-  let t = automToTree 0 test1
+  -- let t = automToTree 0 test1
+  let t = automToTree 0 testSimple
   putStrLn $ drawTree $ fmap show t
   let t' = evalState (normTree t >>= updateInEdges) normInit
   putStrLn $ drawTree $ fmap show t'
   let g' = treeToAutom t'
   -- write to file
-  writeGraphToFile "test.dot" test1
+  writeGraphToFile "test.dot" testSimple
   writeGraphToFile "gfold.dot" g'
-toNormalForm :: PnkGraph -> PnkGraph
-toNormalForm graph = do
-  -- in normal form, we push the PROB nodes to the root, and we push the SEQ to the leaves
-  -- PAR is just before SEQ leaves
-  -- we need to find the PAR nodes
-  let newgraph = empty :: PnkGraph
-  -- insert prob node, probability should be determined when making the edges
-  let withProb = insNode (0, (Prob, 0.0)) newgraph
 
+testNormalization :: Exp -> IO ()
+testNormalization expression = do
+  let graph = expToGraph expression
+  let t = automToTree 0 graph
+  putStrLn $ drawTree $ fmap show t
+  let t' = evalState (normTree t >>= updateInEdges) normInit
+  putStrLn $ drawTree $ fmap show t'
+  let g' = treeToAutom t'
+  -- write to file
+  writeCppFile $ graphToInstructionList graph
+  writeGraphToFile "test.dot" graph
+  writeGraphToFile "gfold.dot" g'
 
-  newgraph
 
 getGraphNodes :: PnkGraph -> IO ()
 getGraphNodes graph = do
@@ -328,51 +358,16 @@ writeGraphToFile name graph = do
   let dot = showDot $ fglToDot graph
   writeFile name dot
 
--- if a PROB node is already found
-expNeedsNormalization' :: Exp -> Bool
-expNeedsNormalization' expression = do
-  case expression of
-    EAssPt _ -> False
-    EAssSw _ -> False
-    ESwEq _ -> False
-    EPtEq _ -> False
-    EDup -> False
-    ESkip -> False
-    EDrop -> False
-    ESeq e1 e2 -> expNeedsNormalization' e1 || expNeedsNormalization' e2
-    EProbD _ _ -> True
-    EProb _ _ _ -> True
-    EPar e1 e2 -> expNeedsNormalization' e1 || expNeedsNormalization' e2
-    EKleene e1 -> expNeedsNormalization' e1
-
--- final tree needs to be normalized if it contains a PROB node under a PAR node somewhere
-expNeedsNormalization :: Exp -> Bool
-expNeedsNormalization expression = do
-  case expression of
-    EAssPt _ -> False
-    EAssSw _ -> False
-    ESwEq _ -> False
-    EPtEq _ -> False
-    EDup -> False
-    ESkip -> False
-    EDrop -> False
-    ESeq e1 e2 -> expNeedsNormalization e1 || expNeedsNormalization e2
-    EProbD e1 e2 -> expNeedsNormalization' e1 || expNeedsNormalization' e2
-    EProb e1 _ e2 -> expNeedsNormalization' e1 || expNeedsNormalization' e2
-    EPar e1 e2 -> expNeedsNormalization e1 || expNeedsNormalization e2
-    EKleene e1 -> expNeedsNormalization e1
-
-
-
 -- type of Graph is Gr a b with a the type for the nodes and b the type for the edges
 testGraph :: Exp -> IO ()
 testGraph expression = do
   putStr "testGraph\n"
-  let graph = expToGraph expression
-  prettyPrint graph
-  writeGraphToFile "automaton.dot" graph
-  getGraphNodes graph
-  putStr $ graphToInstructionList graph
+  -- let graph = expToGraph expression
+  testNormalization expression
+  -- prettyPrint graph
+  -- writeGraphToFile "automaton.dot" graph
+  -- getGraphNodes graph
+  -- putStr $ graphToInstructionList graph
 
 newInstrToString :: LNode InstNode -> String
 newInstrToString instrnode = do
@@ -401,45 +396,75 @@ graphToInstructionList graph = do
   let edgesstring = map newEdgestoString edgeslist
   unlines nodesstring ++ unlines edgesstring
 
-expToGraph' :: Exp -> PnkGraph -> Int -> Int -> (PnkGraph, Int)
-expToGraph' expression graph nodenr parentnr =
+writeCppFile :: String -> IO ()
+writeCppFile content = do
+  writeFile filename "#ifndef COMPILED_PNK_PROGRAM_H\n#define COMPILED_PNK_PROGRAM_H\n#include \"pnk-program.h\"\n"
+  appendFile filename "PnkPrgrm getAutomaton() {\n\tPnkPrgrm ret;\n"
+  appendFile filename content
+  appendFile filename "\n\treturn ret;\n}"
+  appendFile filename "\n#endif"
+  where filename = "ns3/compiled-pnk-program.h"
+
+expToGraph' :: Exp -> PnkGraph -> Int -> Int -> Int -> (PnkGraph, Int)
+expToGraph' expression graph nodenr parentnr loopback =
   case expression of
     EAssPt arg -> do
       let newGraph = insNode (nodenr, (AssPt, fromInteger arg)) graph
       let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
-      (addedEdge, nodenr)
+      if loopback >= 0 then 
+          (insEdge (nodenr, loopback, 1.0) addedEdge, nodenr)
+        else
+          (addedEdge, nodenr)
     EAssSw arg -> do
       let newGraph = insNode (nodenr, (AssSw, fromInteger arg)) graph
       let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
-      (addedEdge, nodenr)
+      if loopback >= 0 then 
+          (insEdge (nodenr, loopback, 1.0) addedEdge, nodenr)
+        else
+          (addedEdge, nodenr)
     ESwEq arg -> do
       let newGraph = insNode (nodenr, (TestSw, fromInteger arg)) graph
       let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
-      (addedEdge, nodenr)
+      if loopback >= 0 then 
+          (insEdge (nodenr, loopback, 1.0) addedEdge, nodenr)
+        else
+          (addedEdge, nodenr)
     EPtEq arg -> do
       let newGraph = insNode (nodenr, (TestPt, fromInteger arg)) graph
       let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
-      (addedEdge, nodenr)
+      if loopback >= 0 then 
+          (insEdge (nodenr, loopback, 1.0) addedEdge, nodenr)
+        else
+          (addedEdge, nodenr)
     EDup -> do
       let newGraph = insNode (nodenr, (Dup, 0)) graph
       let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
-      (addedEdge, nodenr)
+      if loopback >= 0 then 
+          (insEdge (nodenr, loopback, 1.0) addedEdge, nodenr)
+        else
+          (addedEdge, nodenr)
     ESkip -> do
       let newGraph = insNode (nodenr, (Skip, 0)) graph
       let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
-      (addedEdge, nodenr)
+      if loopback >= 0 then 
+          (insEdge (nodenr, loopback, 1.0) addedEdge, nodenr)
+        else
+          (addedEdge, nodenr)
     EDrop -> do
       let newGraph = insNode (nodenr, (Drop, 0)) graph
       let addedEdge = insEdge (parentnr, nodenr, 1.0) newGraph
-      (addedEdge, nodenr)
+      if loopback >= 0 then 
+          (insEdge (nodenr, loopback, 1.0) addedEdge, nodenr)
+        else
+          (addedEdge, nodenr)
     ESeq e1 e2 -> do
-      let (leftGraph, leftmax ) = expToGraph' e1 graph nodenr parentnr
-      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) leftmax
+      let (leftGraph, leftmax ) = expToGraph' e1 graph nodenr parentnr loopback
+      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) leftmax loopback
       -- let connection = insEdge (leftmax, leftmax + 1, ()) rightGraph
       (rightGraph, rightmax)
     EProb e1 d e2 -> do
-      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr
-      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr
+      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr loopback
+      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr loopback
       let newGraph = insNode (nodenr, (Prob, d)) rightGraph
       -- I feel like leftEdge and rightEdge should be handled by the children
       -- but deleting them does not work..
@@ -448,8 +473,8 @@ expToGraph' expression graph nodenr parentnr =
       let parentEdge = insEdge (parentnr, nodenr, 1.0) rightEdge
       (parentEdge, rightmax)
     EProbD e1 e2 -> do
-      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr
-      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr
+      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr loopback
+      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr loopback
       let newGraph = insNode (nodenr, (Prob, 0.5)) rightGraph
       -- I feel like leftEdge and rightEdge should be handled by the children
       -- but deleting them does not work..
@@ -458,8 +483,8 @@ expToGraph' expression graph nodenr parentnr =
       let parentEdge = insEdge (parentnr, nodenr, 1.0) rightEdge
       (parentEdge, rightmax)
     EPar e1 e2 -> do
-      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr
-      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr
+      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr loopback
+      let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr loopback
       let newGraph = insNode (nodenr, (Par, 0)) rightGraph
       -- I feel like leftEdge and rightEdge should be handled by the children
       -- but deleting them does not work..
@@ -470,9 +495,10 @@ expToGraph' expression graph nodenr parentnr =
     EKleene e1 -> do
       -- in the graph version, we no longer need kleene nodes
       -- we will just loop back to the beginning
-      let (childGraph, childmax) = expToGraph' e1 graph nodenr parentnr
-      let newGraph = insEdge (childmax, nodenr, 1.0) childGraph
-      (newGraph, childmax)
+
+      -- TODO we only use the last child at the moment
+      -- we should loop back all children
+      expToGraph' e1 graph nodenr parentnr nodenr
 
 
 
@@ -481,9 +507,8 @@ expToGraph expression = do
    -- insert a skip in the beginning as no-op
    -- to prevent self loop at the beginning
   let thegraph = empty  :: PnkGraph
-  let seeded = insNode (0, (Skip, 0)) thegraph
-  let (graph, _) = expToGraph' expression seeded 1 0
-  if expNeedsNormalization expression then toNormalForm graph else graph
+  let graph = fst $ expToGraph' expression thegraph 0 0 (-1)
+  delEdge (0, 0) graph
 
 putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
@@ -635,18 +660,8 @@ instrToCppString _ parentnr instrnode = do
     (Drop, _) -> "\tret.addNode(" ++ show parentnr ++ ",  DROP, 0, 0.0);"
     (Skip, _) -> "\tret.addNode(" ++ show parentnr ++ ",  SKIP, 0, 0.0);"
 
-printAutomaton :: Tree InstNode -> IO ()
-printAutomaton = putStrLn . drawVerticalTree . transferInstTreeToStringTree
-
-transferInstTreeToStringTree :: Tree InstNode -> Tree String
-transferInstTreeToStringTree (Node (x, y) []) = Node (show x ++ " " ++ show y) []
-transferInstTreeToStringTree (Node (x, y) [leftTree]) = do
-  let newLeftTree = transferInstTreeToStringTree leftTree
-  Node (show x ++ " " ++ show y) [newLeftTree]
-transferInstTreeToStringTree (Node (x, y) (leftTree:rightTree)) = do
-  let newLeftTree = transferInstTreeToStringTree leftTree
-  let newRightTree = transferInstTreeToStringTree (head rightTree)
-  Node (show x ++ " " ++ show y) [newLeftTree, newRightTree]
+-- printAutomaton :: Tree InstNode -> IO ()
+-- printAutomaton = putStrLn . drawVerticalTree . transferInstTreeToStringTree
 
 -- we want to create a function that takes a program and outputs c++ code
 -- the program should be turned into a finite automaton
@@ -679,48 +694,3 @@ createAutomaton content = do
       -- putStrLn "writing to file..."
       -- writeCppFile prgrm
 
-
-appendToLeaves :: Tree InstNode -> Tree InstNode -> Tree InstNode
--- if the subtree is empty, we have reached a leaf and need to dump the subtree there
-appendToLeaves (Node (x,y) []) someSubTree = Node (x,y) [someSubTree]
-appendToLeaves (Node (x,y) [leftTree]) someSubTree = do
-  let newLeftTree = appendToLeaves leftTree someSubTree
-  Node (x,y) [newLeftTree]
-appendToLeaves (Node (x,y) (leftTree:rightTree)) someSubTree = do
-  let newLeftTree = appendToLeaves leftTree someSubTree
-  let newRightTree = appendToLeaves (head rightTree) someSubTree
-  Node (x,y) [newLeftTree, newRightTree]
-
-
-writeCppFile :: String -> IO ()
-writeCppFile content = do
-  writeFile filename "#ifndef COMPILED_PNK_PROGRAM_H\n#define COMPILED_PNK_PROGRAM_H\n#include \"pnk-program.h\"\n"
-  appendFile filename "PnkPrgrm getAutomaton() {\n\tPnkPrgrm ret;\n"
-  appendFile filename content
-  appendFile filename "\n\treturn ret;\n}"
-  appendFile filename "\n#endif"
-  where filename = "ns3/compiled-pnk-program.h"
-
-getAutomatonTree' :: Int -> Int -> Tree InstNode -> (Tree AutomatonNode, Int)
-getAutomatonTree' nodenr parentnr (Node (x,y) []) = (Node (x,y, nodenr, parentnr) [], nodenr + 1)
-getAutomatonTree' nodenr parentnr (Node (x,y) [leftTree]) = do
-  let newLeftTree = getAutomatonTree' (nodenr + 1) nodenr leftTree
-  (Node (x,y, nodenr, parentnr) [fst newLeftTree], snd newLeftTree)
-getAutomatonTree' nodenr parentnr (Node (x,y) (leftTree:rightTree)) = do
-  let newLeftTree = getAutomatonTree' (nodenr + 1) nodenr leftTree
-  let newRightTree = getAutomatonTree' (snd newLeftTree) nodenr (head rightTree)
-  (Node (x,y, nodenr, parentnr) [fst newLeftTree, fst newRightTree], snd newRightTree)
-
-
-getAutomatonTree :: Tree InstNode -> Tree AutomatonNode
-getAutomatonTree (Node (x,y) z) = fst $ getAutomatonTree' 0 0 (Node (x,y) z)
-
-automatonToCppString :: Tree AutomatonNode -> String
-automatonToCppString (Node (x,y,z,w) []) = instrToCppString z w (x,y)
-automatonToCppString (Node (x,y,z,w) [leftTree]) = do
-  let newLeftTree = automatonToCppString leftTree
-  instrToCppString z w (x,y) ++ "\n" ++ newLeftTree
-automatonToCppString (Node (x,y,z,w) (leftTree:rightTree)) = do
-  let newLeftTree = automatonToCppString leftTree
-  let newRightTree = automatonToCppString (head rightTree)
-  instrToCppString z w (x,y) ++ "\n" ++ newLeftTree ++ "\n" ++ newRightTree

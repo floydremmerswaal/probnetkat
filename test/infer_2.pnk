@@ -1,0 +1,13 @@
+// total network is (p;t)*;e
+
+// test policy
+((((sw = 1; (pt <- 2 + pt <- 3)) & (sw = 2; pt <- 4) & (sw = 3; pt <- 4));
+// topology
+((sw = 1; pt = 2; (( sw <- 2 ; pt <- 1) +[0.9] drop)) &
+ (sw = 1; pt = 3; sw <- 3; pt <- 1) &
+ (sw = 2; pt = 4; sw <- 4; pt <- 2) &
+ (sw = 3; pt = 4; sw <- 4; pt <- 3)))*)
+
+// what ends up in switch 4?
+; (sw = 4)
+
