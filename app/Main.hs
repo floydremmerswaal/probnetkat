@@ -322,14 +322,14 @@ updateInEdges = mapM upd
 
 testGfold :: IO ()
 testGfold = do
-  -- let t = automToTree 0 test1
-  let t = automToTree 0 testSimple
+  let t = automToTree 0 test1
+  --let t = automToTree 0 testSimple
   putStrLn $ drawTree $ fmap show t
   let t' = evalState (normTree t >>= updateInEdges) normInit
   putStrLn $ drawTree $ fmap show t'
   let g' = treeToAutom t'
   -- write to file
-  writeGraphToFile "test.dot" testSimple
+  writeGraphToFile "test.dot" test1
   writeGraphToFile "gfold.dot" g'
 
 testNormalization :: Exp -> IO ()
@@ -508,7 +508,7 @@ expToGraph expression = do
    -- to prevent self loop at the beginning
   let thegraph = empty  :: PnkGraph
   let graph = fst $ expToGraph' expression thegraph 0 0 (-1)
-  delEdge (0, 0) graph
+  delEdge (0, 0) graph -- remove self loop
 
 putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
@@ -543,8 +543,8 @@ usage = do
     [ "Call with one of the following argument combinations:"
     , "  --help               Display this help message."
     , "  -g                   Test gfold"
-    , "  -ie (file) (input)  Run exact inference on program"
-    , "  -is (file) (input)  Run sample inference on program"
+    , "  -ie (file) (input)   Run exact inference on program"
+    , "  -is (file) (input)   Run sample inference on program"
     , "  -c (file)            Compile program to NS-3 C++"
     , "  -p (file)            Attempt to parse program"
     , "  -t (file)            Attempt to parse program and show the resulting tree"
@@ -599,7 +599,8 @@ printAsMultiSet input = do
 
   print multiset
   prettyPrintSHI 10000 occurlist
-  
+
+itemOf :: Int -> [a] -> Maybe a; x `itemOf` xs = let xslen = length xs in if ((abs x) > xslen) then Nothing else Just (xs !! (x `mod` xslen))  
 
 inference :: [String] ->  IO ()
 inference fs = do
@@ -617,9 +618,11 @@ inference fs = do
       let kleisliArrow = transExp tree ::  Kleisli Enumerator SH SH
       let result = runKleisli kleisliArrow initialSet
       let samples = enumerator result
+      putStrLn "Function input:"
+      print input
       putStrLn "Function output:"
       prettyPrintSHD samples
-  where input = Data.Maybe.fromMaybe [[(0, 0)]] (readMaybe (head (tail fs))) -- if no input is given, use [[(0, 0)]]
+  where input = Data.Maybe.fromMaybe [[(0, 0)]] (readMaybe (fromMaybe "[[(0,0)]]" (itemOf 1 fs))) -- if no input is given, use [[(0, 0)]]
 
 inferenceSample :: [String] ->  IO ()
 inferenceSample fs = do
@@ -637,12 +640,11 @@ inferenceSample fs = do
       let kleisliArrow = transExp tree ::  Kleisli SamplerIO SH SH
       let result = runKleisli kleisliArrow initialSet
       samples <- sampleIOfixed $ replicateM 10000 result
+      putStrLn "Function input:"
+      print input
       putStrLn "Function output:"
       printAsMultiSet samples
-      -- prettyPrintSHD samples
-      -- print out the samples
-      
-  where input = Data.Maybe.fromMaybe [[(0, 0)]] (readMaybe (head (tail fs))) -- if no input is given, use [[(0, 0)]]
+  where input = Data.Maybe.fromMaybe [[(0, 0)]] (readMaybe (fromMaybe "[[(0,0)]]" (itemOf 1 fs))) -- if no input is given, use [[(0, 0)]]
 
 
 
