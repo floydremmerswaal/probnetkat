@@ -56,50 +56,10 @@ type Verbosity = Int
 data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip deriving Show
 type InstNode = (Inst, Double)
 
-type AutomatonNode = (Inst, Double, Int, Int)
-
 type PnkGraph = Gr InstNode Double
 type PnkContext = Context InstNode Double
 
 
--- gfold :: Graph gr	 
--- => (Context a b -> [Node])	-- direction of fold
--- -> (Context a b -> c -> d) -- depth aggregation	
--- -> (Maybe d -> c -> c, c)	-- breadth/level aggregation
--- -> [Node]	 
--- -> gr a b	 
--- -> c
-
--- Node is an Int, Context is a tuple of (pre, node, label, post)
--- pre the incoming, post the outgoing edges
-
--- => (Context a b -> [Node])	-- direction of fold
-orderNormalise :: PnkContext -> [Node]
-orderNormalise ctx = do
-  let (_, node, _, post) = ctx
-  let nextnodes = map snd post
-  trace ("Visiting node: " ++ show node ++ " with next nodes: " ++ show nextnodes ++ " context: " ++  show ctx) nextnodes
-
--- -- da :: (Context a b -> c -> d) -- depth aggregation	
--- -- The function takes a context, and combines it with the accumulated value (c),
--- -- returning a possibly different type (d).
--- da :: PnkContext -> PnkGraph -> PnkGraph -- for now, merge the context into the graph
--- da context g =
---   trace ("Depth aggregation for graph: " ++ show g ++ " context: " ++ show context) (context & g)
-
--- -- Maybe d -> c -> c
--- combineGraphs :: Maybe PnkGraph -> PnkGraph -> PnkGraph -- insert the nodes and edges of the maybeGraph into the graph
--- combineGraphs maybeGraph graph =
---   case maybeGraph of
---     Nothing -> graph -- Nothing case shouldn't happen, but we have to account for it
---     Just g -> do 
---       let ns = labNodes g
---       let es = labEdges g
---       trace ("Adding graph " ++ show g ++ "\ngraph = " ++ show graph) $ insEdges es $ insNodes ns graph
-
--- -- ba :: (Maybe d -> c -> c, c)	-- breadth/level aggregation
--- ba :: (Maybe PnkGraph -> PnkGraph -> PnkGraph, PnkGraph)
--- ba = (trace "Breadth aggregation" combineGraphs, empty)
 
 testNodes1 :: [LNode InstNode]
 testNodes1 =
@@ -131,11 +91,11 @@ testEdges1 =
 simpleTest :: [LNode InstNode]
 simpleTest = 
   [
-    (0, (Par, 1.0))
+    (0, (Par, 0.0))
   , (1, (Prob, 0.3))
-  , (2, (Prob, 0.6))
-  , (3, (AssSw, 3.0))
-  , (4, (AssPt, 4.0))
+  , (4, (Prob, 0.6))
+  , (2, (AssSw, 3.0))
+  , (3, (AssPt, 4.0))
   , (5, (AssPt, 5.0))
   , (6, (AssSw, 6.0))
   ]
@@ -144,11 +104,15 @@ simpleTestEdges :: [LEdge Double]
 simpleTestEdges = 
   [
     (0, 1, 1.0)
-  , (0, 2, 1.0)
-  , (1, 3, 0.3)
-  , (1, 4, 0.7)
-  , (2, 5, 0.6)
-  , (2, 6, 0.4)
+  , (0, 4, 1.0)
+  , (1, 2, 0.3)
+  , (1, 3, 0.7)
+  , (4, 5, 0.6)
+  , (4, 6, 0.4)
+  , (2, 0, 1.0)
+  , (3, 0, 1.0)
+  , (5, 0, 1.0)
+  , (6, 0, 1.0)
   ]
 
 test1 :: PnkGraph
@@ -156,26 +120,6 @@ test1 = mkGraph testNodes1 testEdges1
 
 testSimple :: PnkGraph
 testSimple = mkGraph simpleTest simpleTestEdges
-
-test1Tree :: Tree PnkContext
-test1Tree = head $ xdffWith suc' id [0] test1
-
-
--- | Lifts gfold to monadic operations
--- (and eliminates Maybe from breadth aggregation, or is that too dangerous?)
-gfoldM :: (Graph gr, Monad m) =>
-  (Context a b -> [Node])      -- ^ direction of fold
-  -> (Context a b -> c -> m d) -- ^ depth aggregation
-  -> (d -> c -> m c, c)        -- ^ breadth/level aggregation
-  -> [Node]
-  -> gr a b
-  -> m c
-gfoldM di da (ba, b0) = gfold di daM (baM, pure b0)
-  where
-    -- daM :: Context a b -> m c -> m d
-    daM ctx = (=<<) (da ctx)
-    -- baM :: Maybe (m d) -> m c -> m c
-    baM maybeMD = \mc -> fromJust maybeMD >>= \d -> mc >>= ba d
 
 -- | State of automaton normalisation
 data NormalisationState = NormalisationState
@@ -229,6 +173,7 @@ subForest' t = zip (snd $ rootLabel t) $ subForest t
 -- | Computes the spanning tree of the given automaton from the designated root node r.
 -- It is assumed that r is in the given graph, otherwise the function leads to an unrecoverable
 -- error.
+-- r is usually 0, the root of the automaton.
 automToTree :: Node -> PnkGraph -> SpTree
 automToTree r =
   head . xdffWith suc' (\(inAdj, n, l, outAdj) -> ((inAdj, n, l), fmap fst outAdj)) [r]
@@ -261,12 +206,12 @@ isProb (_, t) = case thd3 (rootLabel' t) of
 -- Essentially checks if we are currently at a non-deterministic choice nodes and
 -- merges that down the tree.
 normStep :: SpLab -> [SpTree] -> NormM (SpTree)
-normStep ((inAdj, n, instr), ws)    [] = do
+normStep ((inAdj, n, instr), ws)    [] = do -- leaf node
   n' <- genNode
   setOrigin n n'
   pure $ Tr.Node ((inAdj, n', instr), ws) []
-normStep (ctx@(_, _, (Par, _)), ws) ts = mergeDown ctx (partition isProb $ zip ws ts)
-normStep ((inAdj, n, instr), ws)    ts =  do
+normStep (ctx@(_, _, (Par, _)), ws) ts = mergeDown ctx (partition isProb $ zip ws ts) -- par node
+normStep ((inAdj, n, instr), ws)    ts =  do -- the rest
   n' <- genNode
   setOrigin n n'
   pure $ Tr.Node ((inAdj, n', instr), ws) ts
@@ -300,50 +245,50 @@ updateInEdges = mapM upd
     updAdj :: (Double, Node) -> NormM [(Double, Node)]
     updAdj (w, k) = fmap ((,) w) <$> getMapped k
 
--- depthAggrNormalise :: Context InstNode Double -> PnkGraph -> NormM NormInterGraph
--- depthAggrNormalise ctx@(ie, n, l, oe) g = do
---   n' <- genNode
---   -- setOrigin n n'
---   -- (mappedO, unmappedO) <- getMapped oe
---   trace ("Depth aggregation for graph: " ++ show g ++ " context: " ++ show ctx) (pure $ ctx & g)
-
--- breadthAggrNormalise :: NormInterGraph -> PnkGraph -> NormM PnkGraph
--- breadthAggrNormalise g graph =
---   let ns = labNodes g
---       es = labEdges g
---   in trace ("Adding graph " ++ show g ++ "\ngraph = " ++ show graph) (pure $ insEdges es $ insNodes ns graph)
-
--- normalise :: PnkGraph -> Node -> PnkGraph
--- normalise g r =
---   evalState (gfoldM orderNormalise depthAggrNormalise (breadthAggrNormalise, empty) [r] g) normInit
-
--- normalise :: PnkGraph -> Node -> PnkGraph
--- normalise g r = _
-
 testGfold :: IO ()
 testGfold = do
-  let t = automToTree 0 test1
-  --let t = automToTree 0 testSimple
+  --let t = automToTree 0 test1
+  let t = automToTree 0 testSimple
   putStrLn $ drawTree $ fmap show t
   let t' = evalState (normTree t >>= updateInEdges) normInit
   putStrLn $ drawTree $ fmap show t'
   let g' = treeToAutom t'
   -- write to file
-  writeGraphToFile "test.dot" test1
-  writeGraphToFile "gfold.dot" g'
+  writeGraphToFile "test_test.dot" testSimple
+  writeGraphToFile "test_gfold.dot" g'
+  getGraphNodes testSimple
+  getGraphNodes g'
+
 
 testNormalization :: Exp -> IO ()
 testNormalization expression = do
   let graph = expToGraph expression
   let t = automToTree 0 graph
+  let p_t = automToTree 0 testSimple
+  putStrLn "expression to graph nodes and edges:"
+  getGraphNodes graph
+  putStrLn "testSimple to graph nodes and edges:"
+  getGraphNodes testSimple
+  putStrLn "expression to tree:"
   putStrLn $ drawTree $ fmap show t
+  putStrLn "testSimple to tree:"
+  putStrLn $ drawTree $ fmap show p_t
   let t' = evalState (normTree t >>= updateInEdges) normInit
+  let p_t' = evalState (normTree p_t >>= updateInEdges) normInit
   putStrLn $ drawTree $ fmap show t'
+  putStrLn $ drawTree $ fmap show p_t'
   let g' = treeToAutom t'
+  let p_g' = treeToAutom p_t'
   -- write to file
-  writeCppFile $ graphToInstructionList graph
-  writeGraphToFile "test.dot" graph
-  writeGraphToFile "gfold.dot" g'
+  -- writeCppFile $ graphToInstructionList graph
+  writeGraphToFile "comp_test.dot" graph
+  writeGraphToFile "comp_gfold.dot" g'
+  writeGraphToFile "pcomp_test.dot" testSimple
+  writeGraphToFile "pcomp_gfold.dot" p_g'
+
+  getGraphNodes g' 
+  getGraphNodes p_g'
+  
 
 
 getGraphNodes :: PnkGraph -> IO ()
@@ -495,9 +440,6 @@ expToGraph' expression graph nodenr parentnr loopback =
     EKleene e1 -> do
       -- in the graph version, we no longer need kleene nodes
       -- we will just loop back to the beginning
-
-      -- TODO we only use the last child at the moment
-      -- we should loop back all children
       expToGraph' e1 graph nodenr parentnr nodenr
 
 
@@ -594,11 +536,7 @@ printOccurList ((x, y):xs) = do
 
 printAsMultiSet :: [SH] -> IO ()
 printAsMultiSet input = do
-  let multiset = Mset.fromList input
-  let occurlist = Mset.toOccurList multiset
-
-  print multiset
-  prettyPrintSHI 10000 occurlist
+  prettyPrintSHI 10000 $ Mset.toOccurList $ Mset.fromList input
 
 itemOf :: Int -> [a] -> Maybe a; x `itemOf` xs = let xslen = length xs in if ((abs x) > xslen) then Nothing else Just (xs !! (x `mod` xslen))  
 
