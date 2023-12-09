@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
 
     // Create the animation object and configure for specified output
     AnimationInterface anim(animFile);
-    anim.EnablePacketMetadata();                                // Optional
+    anim.EnablePacketMetadata();                                             // Optional
     anim.EnableIpv4L3ProtocolCounters(Seconds(0), Seconds(simulation_time)); // Optional
 
     // Set up the actual simulation

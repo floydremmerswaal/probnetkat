@@ -24,7 +24,6 @@
 
 #include "ns3/packet-loss-counter.h"
 
-
 #include "ns3/core-module.h"
 #include "ns3/address.h"
 #include "ns3/application.h"
@@ -34,22 +33,22 @@
 
 namespace ns3
 {
-/**
- * \ingroup applications
- * \defgroup pnkclientserver PnkClientServer
- */
+  /**
+   * \ingroup applications
+   * \defgroup pnkclientserver PnkClientServer
+   */
 
-/**
- * \ingroup pnkclientserver
- *
- * \brief A pnk server, receives pnk packets from a remote hsost.
- *
- * pnk packets carry a 32bits sequence number followed by a 64bits time
- * stamp in their payloads. The application uses the sequence number
- * to determine if a packet is lost, and the time stamp to compute the delay.
- */
-class PnkServer : public Application
-{
+  /**
+   * \ingroup pnkclientserver
+   *
+   * \brief A pnk server, receives pnk packets from a remote hsost.
+   *
+   * pnk packets carry a 32bits sequence number followed by a 64bits time
+   * stamp in their payloads. The application uses the sequence number
+   * to determine if a packet is lost, and the time stamp to compute the delay.
+   */
+  class PnkServer : public Application
+  {
   public:
     /**
      * \brief Get the type ID.
@@ -104,26 +103,32 @@ class PnkServer : public Application
      */
 
     std::map<uint32_t, Ipv4Address> m_nodeAddressMap;
-    std::map<uint32_t, Ptr<Socket>> m_socketMap; //!< IPv4 Socket maps 
+    std::map<uint32_t, Ptr<Socket>> m_socketMap; //!< IPv4 Socket maps
     Ptr<UniformRandomVariable> m_rng;
 
     void HandleRead(Ptr<Socket> socket);
 
-    uint16_t m_port;                 //!< Port on which we listen for incoming packets.
-    Ptr<Socket> m_socket;            //!< IPv4 Socket
-    Ptr<Socket> m_socket6;           //!< IPv6 Socket
-    
+    uint16_t m_port;       //!< Port on which we listen for incoming packets.
+    Ptr<Socket> m_socket;  //!< IPv4 Socket
+    Ptr<Socket> m_socket6; //!< IPv6 Socket
+
     uint64_t m_received;             //!< Number of received packets
     PacketLossCounter m_lossCounter; //!< Lost packet counter
 
     std::map<uint32_t, std::map<uint32_t, bool>> nodenrToBranchMap;
 
+    bool getBranch(uint32_t nodeNr, uint32_t branchNr);
+    void setBranch(uint32_t nodeNr, uint32_t branchNr, bool value);
+    void onDrop(Ptr<const Packet> packet);
+
+    Ptr<std::map<std : pair<int, int>, bool>> m_branchMap; // the map contains maps the branch number and node number to bool for PAR
+
     /// Callbacks for tracing the packet Rx events
     TracedCallback<Ptr<const Packet>> m_rxTrace;
 
     /// Callbacks for tracing the packet Rx events, includes source and destination addresses
-    TracedCallback<Ptr<const Packet>, const Address&, const Address&> m_rxTraceWithAddresses;
-};
+    TracedCallback<Ptr<const Packet>, const Address &, const Address &> m_rxTraceWithAddresses;
+  };
 
 } // namespace ns3
 
