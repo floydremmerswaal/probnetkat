@@ -27,7 +27,9 @@ source-repository head
 
 library
   exposed-modules:
+      Automaton
       Inference
+      Normalise
       Semantics
       Syntax.Abs
       Syntax.ErrM
