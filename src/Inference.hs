@@ -38,7 +38,7 @@ prettyPrintSHI total ((sh, i):xs) = do
 
 printAsMultiSet :: [SH] -> IO ()
 printAsMultiSet input = do
-  prettyPrintSHI 10000 $ Mset.toOccurList $ Mset.fromList input
+  prettyPrintSHI 1000 $ Mset.toOccurList $ Mset.fromList input
 
 inferenceExact :: [String] ->  IO ()
 inferenceExact fs = do

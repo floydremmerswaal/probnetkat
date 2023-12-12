@@ -1,27 +1,18 @@
-module Normalise where
+module Normalise (normalise, testGfold) where
 
-import Syntax.Lex
 import Syntax.Abs
 
-import Automaton (expToGraph, Inst ( AssSw , AssPt , TestSw , TestPt , Dup , Par , Prob , Drop, Skip), InstNode, PnkGraph)
+import Automaton (expToGraph, Inst ( AssSw , AssPt , Par , Prob ), InstNode, PnkGraph)
 
 import qualified Data.IntMap.Strict as Map
 import Data.IntMap.Strict (IntMap)
 import Data.List (partition)
 
-import Data.Maybe (fromMaybe)
-
-import qualified Data.MultiSet as Mset
-
-import Syntax.ErrM
-
 import Data.Tree as Tr
-import Data.Tree.Pretty
-import Data.Tuple.Extra (snd3, thd3)
+import Data.Tuple.Extra (thd3)
 
 
-import Data.Graph.Inductive.Graph -- (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges, (&))
-import Data.Graph.Inductive.Basic (gfold)
+import Data.Graph.Inductive.Graph 
 -- import Data.Graph.Inductive.PatriciaTree (Gr)
 import Data.Graph.Inductive.Tree (Gr)
 import Data.Graph.Inductive.Query.DFS
@@ -34,33 +25,40 @@ import Debug.Trace
 
 type PnkContext = Context InstNode Double
 
+normalise :: PnkGraph -> PnkGraph
+normalise graph = do
+  --let t = automToTree 0 test1
+  let t = automToTree 0 graph
+  let t' = evalState (normTree t >>= updateInEdges) normInit
+  treeToAutom t'
 
-testNodes1 :: [LNode InstNode]
-testNodes1 =
-  [ (0, (AssSw, 1.0))
-  , (1, (AssPt, 2.0))
-  , (2, (Par, 0.0))
-  , (3, (Prob, 0.5))
-  , (4, (Prob, 0.5))
-  , (5, (Skip, 0.0))
-  , (6, (Skip, 0.0))
-  , (7, (Skip, 0.0))
-  , (8, (Skip, 0.0))
-  ]
 
-testEdges1 :: [LEdge Double]
-testEdges1 =
-  [ (0, 1, 1.0)
-  , (1, 2, 1.0)
-  , (2, 3, 1.0)
-  , (2, 4, 1.0)
-  , (3, 5, 0.4)
-  , (3, 6, 0.6)
-  , (4, 7, 0.3)
-  , (4, 8, 0.7)
-  , (8, 0, 1.0)
-  , (2, 0, 1.0)
-  ]
+-- testNodes1 :: [LNode InstNode]
+-- testNodes1 =
+--   [ (0, (AssSw, 1.0))
+--   , (1, (AssPt, 2.0))
+--   , (2, (Par, 0.0))
+--   , (3, (Prob, 0.5))
+--   , (4, (Prob, 0.5))
+--   , (5, (Skip, 0.0))
+--   , (6, (Skip, 0.0))
+--   , (7, (Skip, 0.0))
+--   , (8, (Skip, 0.0))
+--   ]
+
+-- testEdges1 :: [LEdge Double]
+-- testEdges1 =
+--   [ (0, 1, 1.0)
+--   , (1, 2, 1.0)
+--   , (2, 3, 1.0)
+--   , (2, 4, 1.0)
+--   , (3, 5, 0.4)
+--   , (3, 6, 0.6)
+--   , (4, 7, 0.3)
+--   , (4, 8, 0.7)
+--   , (8, 0, 1.0)
+--   , (2, 0, 1.0)
+--   ]
 
 simpleTest :: [LNode InstNode]
 simpleTest = 
@@ -89,8 +87,8 @@ simpleTestEdges =
   , (6, 0, 1.0)
   ]
 
-test1 :: PnkGraph
-test1 = mkGraph testNodes1 testEdges1
+-- test1 :: PnkGraph
+-- test1 = mkGraph testNodes1 testEdges1
 
 testSimple :: PnkGraph
 testSimple = mkGraph simpleTest simpleTestEdges
@@ -223,7 +221,6 @@ updateInEdges = mapM upd
 
 testGfold :: IO ()
 testGfold = do
-  --let t = automToTree 0 test1
   let t = automToTree 0 testSimple
   putStrLn $ drawTree $ fmap show t
   let t' = evalState (normTree t >>= updateInEdges) normInit
@@ -267,8 +264,6 @@ testNormalization expression = do
 
   getGraphNodes g' 
   getGraphNodes p_g'
-  
-
 
 getGraphNodes :: PnkGraph -> IO ()
 getGraphNodes graph = do

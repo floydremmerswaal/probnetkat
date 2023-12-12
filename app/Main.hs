@@ -5,63 +5,21 @@ import Prelude hiding (drop, seq)
 
 import System.Environment ( getArgs )
 import System.Exit ( exitFailure )
-import Control.Monad (when)
-import qualified Data.Set as Set
 import Syntax.Lex
-import Syntax.Abs
 import Syntax.Par
 import Syntax.Print
-import Semantics
-import Transformation
 import Inference (inferenceExact, inferenceSample)
 import Automaton (createAutomatonIO)
 import Normalise
 
-import Text.Printf
-import Control.Arrow
-
-import Control.Monad.Bayes.Enumerator
-import Control.Monad.Bayes.Sampler.Strict
 import Control.Monad.State
-import Control.Monad.Reader
-
-import Text.Read (readMaybe)
-
-import Data.Maybe (fromJust)
-import qualified Data.IntMap.Strict as Map
-import Data.IntMap.Strict (IntMap)
-import Data.List (partition)
-
-import Data.Maybe (fromMaybe)
-
-import qualified Data.MultiSet as Mset
 
 import Syntax.ErrM
-
-import Data.Tree as Tr
-import Data.Tree.Pretty
-import Data.Tuple.Extra (snd3, thd3)
-
-
-import Data.Graph.Inductive.Graph -- (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges, (&))
-import Data.Graph.Inductive.Basic (gfold)
--- import Data.Graph.Inductive.PatriciaTree (Gr)
-import Data.Graph.Inductive.Tree (Gr)
-import Data.Graph.Inductive.Query.DFS
-
-import Data.Graph.Inductive.Dot (fglToDot, showDot)
-
-import Debug.Trace
 
 type ParseFun a = [Token] -> Err a
 
 type Verbosity = Int
 
-data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip deriving Show
-type InstNode = (Inst, Double)
-
-type PnkGraph = Gr InstNode Double
-type PnkContext = Context InstNode Double
 
 putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
@@ -115,16 +73,3 @@ main = do
     "-c":fs    -> createAutomatonIO fs
     "-t":fs    -> mapM_ (runFile 2 pExp) fs
     fs         -> mapM_ (runFile 2 pExp) fs
-
-instrToCppString :: Int -> Int -> InstNode -> String
-instrToCppString _ parentnr instrnode = do
-  case instrnode of
-    (AssSw, arg) -> "\tret.addNode(" ++ show parentnr ++ ",  SW, " ++ show arg ++ ", 0.0);"
-    (AssPt, arg) -> "\tret.addNode(" ++ show parentnr ++ ",  PT, " ++ show arg ++ ", 0.0);"
-    (TestSw, arg) -> "\tret.addNode(" ++ show parentnr ++ ",  TESTSW, " ++ show arg ++ ", 0.0);"
-    (TestPt, arg) -> "\tret.addNode(" ++ show parentnr ++ ",  TESTPT, " ++ show arg ++ ", 0.0);"
-    (Dup, _) -> "\tret.addNode(" ++ show parentnr ++ ",  DUP, 0, 0.0);"
-    (Par, _) -> "\tret.addNode(" ++ show parentnr ++ ",  PAR, 0, 0.0);"
-    (Prob, arg) -> "\tret.addNode(" ++ show parentnr ++ ",  PROB, 0, " ++ show arg ++ ");"
-    (Drop, _) -> "\tret.addNode(" ++ show parentnr ++ ",  DROP, 0, 0.0);"
-    (Skip, _) -> "\tret.addNode(" ++ show parentnr ++ ",  SKIP, 0, 0.0);"

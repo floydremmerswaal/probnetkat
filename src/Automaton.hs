@@ -1,6 +1,7 @@
 module Automaton (createAutomatonIO, expToGraph, Inst(AssSw , AssPt , TestSw , TestPt , Dup , Par , Prob , Drop, Skip), InstNode, PnkGraph) where
 
 import Data.Graph.Inductive.Graph -- (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges, (&))
+
 -- import Data.Graph.Inductive.PatriciaTree (Gr)
 import Data.Graph.Inductive.Tree (Gr)
 
@@ -24,7 +25,6 @@ type PnkGraph = Gr InstNode Double
 
 putStrV :: Verbosity -> String -> IO ()
 putStrV v s = when (v > 1) $ putStrLn s
-
 
 showTree :: (Show a, Print a) => Int -> a -> IO ()
 showTree v tree = do
