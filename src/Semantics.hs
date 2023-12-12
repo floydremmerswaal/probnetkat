@@ -100,7 +100,7 @@ kleeneApprox 0 _ = skip
 kleeneApprox n p = skip `par` seq p (kleeneApprox (n-1) p)
 
 kleene :: MonadDistribution m => KSH m -> KSH m
-kleene = kleeneApprox 6
+kleene = kleeneApprox 5
 
 -- do kleeneApprox repetitions until we reach a fixpoint
 
