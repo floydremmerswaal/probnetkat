@@ -1,15 +1,12 @@
 module Inference (inferenceExact, inferenceSample) where
 
 import Semantics
-import Syntax.Lex
 import Syntax.Par
-import Syntax.Abs
 
 import qualified Data.Set as Set
 import qualified Data.MultiSet as Mset
 import Control.Arrow
 import Control.Monad (replicateM)
-import Control.Monad.Bayes.Class
 import Data.Maybe (fromMaybe)
 import Text.Read (readMaybe)
 import Control.Monad.Bayes.Enumerator (Enumerator, enumerator)
@@ -19,7 +16,7 @@ import Text.Printf (printf)
 
 import Transformation (transExp)
 
-itemOf :: Int -> [a] -> Maybe a; x `itemOf` xs = let xslen = length xs in if ((abs x) > xslen) then Nothing else Just (xs !! (x `mod` xslen))  
+itemOf :: Int -> [a] -> Maybe a; x `itemOf` xs = let xslen = length xs in if abs x > xslen then Nothing else Just (xs !! (x `mod` xslen))  
 
 prettyPrintSingleSHD :: (SH, Double) -> IO ()
 prettyPrintSingleSHD (sh, d) = do
@@ -38,16 +35,6 @@ prettyPrintSHI total ((sh, i):xs) = do
   let d = fromIntegral i / fromIntegral total
   prettyPrintSingleSHD (sh, d)
   prettyPrintSHI total xs
-
--- we could make a 'pure' version of this function that returns the result of the runKleisli
--- which could then be sampled from
--- input is now essentially a dirac delta on a list of samples, but we could make it a distribution
-
-printOccurList :: (Show a) => [(a, Int)] -> IO ()
-printOccurList [] = return ()
-printOccurList ((x, y):xs) = do
-  putStrLn $ show x ++ " : " ++ show y
-  printOccurList xs
 
 printAsMultiSet :: [SH] -> IO ()
 printAsMultiSet input = do
