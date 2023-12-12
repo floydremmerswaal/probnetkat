@@ -286,6 +286,11 @@ int getNextNodeNr(PnkPrgrm* program, int curnode, Ptr<UniformRandomVariable> m_r
         } else {
             // parallel node
             // for now, just pick the first one
+
+            // TODO reference a map of the parent program that tells us which
+            // par branches lead to drops, and skip those if possible (if all branches are marked
+            // we will pick one of them anyway)
+
             return node->edges[0].to;
         }
     }
