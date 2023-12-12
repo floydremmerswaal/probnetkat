@@ -7,6 +7,7 @@ import System.Environment ( getArgs )
 import System.Exit ( exitFailure )
 import Syntax.Lex
 import Syntax.Par
+import Syntax.Abs
 import Syntax.Print
 import Inference (inferenceExact, inferenceSample)
 import Automaton (createAutomatonIO)
@@ -54,8 +55,8 @@ usage = do
     [ "Call with one of the following argument combinations:"
     , "  --help               Display this help message."
     , "  -g                   Test gfold"
-    , "  -ie (file) (input)   Run exact inference on program"
-    , "  -is (file) (input)   Run sample inference on program"
+    , "  -i (file) (input)    Run exact inference on program"
+    , "  -s (file) (input)    Run sample inference on program"
     , "  -c (file)            Compile program to NS-3 C++"
     , "  -p (file)            Attempt to parse program"
     , "  -t (file)            Attempt to parse program and show the resulting tree"
@@ -68,8 +69,37 @@ main = do
     ["--help"] -> usage
     "-g":_ -> testGfold
     "-p":fs    -> mapM_ (runFile 0 pExp) fs
-    "-ie":fs  -> inferenceExact fs
-    "-is":fs  -> inferenceSample fs
-    "-c":fs    -> createAutomatonIO fs
+    "-i":fs  -> parseAndForwardArg fs inferenceExact
+    "-s":fs  -> parseAndForwardArg fs inferenceSample
+    "-c":fs    -> parseAndForward fs createAutomatonIO
     "-t":fs    -> mapM_ (runFile 2 pExp) fs
     fs         -> mapM_ (runFile 2 pExp) fs
+
+
+parseAndForwardArg :: [String] -> (Exp -> String -> IO()) -> IO ()
+parseAndForwardArg fs f = do
+  s <- readFile (head fs)
+  let ts = myLexer s
+  case pExp ts of
+    Left err -> do
+      putStrLn "\nParse Failed...\n"
+      putStrLn err
+      exitFailure
+    Right tree -> do
+      putStrLn "\nParse successful!"
+      showTree 2 tree
+      f tree (head (tail fs))
+  
+parseAndForward :: [String] -> (Exp -> IO()) -> IO ()
+parseAndForward fs f = do
+  s <- readFile (head fs)
+  let ts = myLexer s
+  case pExp ts of
+    Left err -> do
+      putStrLn "\nParse Failed...\n"
+      putStrLn err
+      exitFailure
+    Right tree -> do
+      putStrLn "\nParse successful!"
+      showTree 2 tree
+      f tree

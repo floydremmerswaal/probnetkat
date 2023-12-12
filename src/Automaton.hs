@@ -1,9 +1,11 @@
-module Automaton (createAutomatonIO, expToGraph, Inst(AssSw , AssPt , TestSw , TestPt , Dup , Par , Prob , Drop, Skip), InstNode, PnkGraph) where
+module Automaton (createAutomaton, createAutomatonIO, expToGraph, Inst(AssSw , AssPt , TestSw , TestPt , Dup , Par , Prob , Drop, Skip), InstNode, PnkGraph) where
 
 import Data.Graph.Inductive.Graph -- (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges, (&))
 
 -- import Data.Graph.Inductive.PatriciaTree (Gr)
 import Data.Graph.Inductive.Tree (Gr)
+
+import Prelude hiding (exp)
 
 import Control.Monad (when)
 import Syntax.Par
@@ -130,29 +132,16 @@ expToGraph expression = do
   let graph = fst $ expToGraph' expression thegraph 0 0 (-1)
   delEdge (0, 0) graph -- remove self loop
 
-createAutomatonIO :: [String] -> IO ()
-createAutomatonIO content = do
-  putStrLn "createAutomaton"
-  s <- readFile (head content)
-  let ts = myLexer s
-  case pExp ts of
-    Left err -> do
-      putStrLn "\nParse Failed...\n"
-      putStrLn err
-      exitFailure
-    Right tree -> do
-      putStrLn "\nParse Successful!\n"
-      showTree 2 tree
-      -- traverse the tree and print the c++ code
-      putStrLn "C++ code:"
-      putStrLn "PnkPrgrm getAutomaton() {"
-      putStrLn "\tPnkPrgrm ret;"
-      let prgrm = graphToInstructionList $ expToGraph tree
-      putStr prgrm
-      putStrLn "\n\treturn ret;"
-      putStrLn "}"
-      putStrLn "writing to file..."
-      writeCppFile prgrm
+createAutomaton :: Exp -> PnkGraph
+createAutomaton = expToGraph
+
+
+createAutomatonIO :: Exp -> IO ()
+createAutomatonIO exp = do
+  putStrLn "Creating automaton..."
+  let graph = createAutomaton exp
+  putStrLn "writing to file..."
+  writeCppFile $ graphToInstructionList graph
 
 
 newInstrToString :: LNode InstNode -> String
