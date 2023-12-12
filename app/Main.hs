@@ -42,7 +42,8 @@ import Data.Tuple.Extra (snd3, thd3)
 
 import Data.Graph.Inductive.Graph -- (Context, Node, prettyPrint, insNode, insEdge, empty, nodes, edges, insNodes, Graph (mkGraph), labNodes, labEdges, LNode, LEdge, delEdges, delNodes, insEdges, (&))
 import Data.Graph.Inductive.Basic (gfold)
-import Data.Graph.Inductive.PatriciaTree (Gr)
+-- import Data.Graph.Inductive.PatriciaTree (Gr)
+import Data.Graph.Inductive.Tree (Gr)
 import Data.Graph.Inductive.Query.DFS
 
 import Data.Graph.Inductive.Dot (fglToDot, showDot)
@@ -176,7 +177,9 @@ subForest' t = zip (snd $ rootLabel t) $ subForest t
 -- r is usually 0, the root of the automaton.
 automToTree :: Node -> PnkGraph -> SpTree
 automToTree r =
-  head . xdffWith suc' (\(inAdj, n, l, outAdj) -> ((inAdj, n, l), fmap fst outAdj)) [r]
+  head . xdffWith suc' (\c@(inAdj, n, l, outAdj) ->
+                          trace ("Adding context " ++ show c ++ " to tree.")
+                          ((inAdj, n, l), fmap fst outAdj)) [r]
 
 -- | Merges a non-deterministic choice down into the given forest.
 -- The first list of children must be the probabilistic nodes and the other
@@ -263,8 +266,11 @@ testGfold = do
 testNormalization :: Exp -> IO ()
 testNormalization expression = do
   let graph = expToGraph expression
+  -- let graph = mkGraph (labNodes graph') (labEdges graph')
   let t = automToTree 0 graph
   let p_t = automToTree 0 testSimple
+  putStrLn $ "match expr: " ++ show (match 0 graph)
+  putStrLn $ "match tree: " ++ show (match 0 testSimple)
   putStrLn "expression to graph nodes and edges:"
   getGraphNodes graph
   putStrLn "testSimple to graph nodes and edges:"
@@ -408,32 +414,32 @@ expToGraph' expression graph nodenr parentnr loopback =
       -- let connection = insEdge (leftmax, leftmax + 1, ()) rightGraph
       (rightGraph, rightmax)
     EProb e1 d e2 -> do
-      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr loopback
+      let newGraph = insNode (nodenr, (Prob, d)) graph
+      let (leftGraph, leftmax) = expToGraph' e1 newGraph (nodenr + 1) nodenr loopback
       let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr loopback
-      let newGraph = insNode (nodenr, (Prob, d)) rightGraph
       -- I feel like leftEdge and rightEdge should be handled by the children
       -- but deleting them does not work..
-      let leftEdge = insEdge (nodenr, nodenr + 1, d) newGraph
+      let leftEdge = insEdge (nodenr, nodenr + 1, d) rightGraph
       let rightEdge = insEdge (nodenr, leftmax + 1, 1-d) leftEdge
       let parentEdge = insEdge (parentnr, nodenr, 1.0) rightEdge
       (parentEdge, rightmax)
     EProbD e1 e2 -> do
-      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr loopback
+      let newGraph = insNode (nodenr, (Prob, 0.5)) graph
+      let (leftGraph, leftmax) = expToGraph' e1 newGraph (nodenr + 1) nodenr loopback
       let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr loopback
-      let newGraph = insNode (nodenr, (Prob, 0.5)) rightGraph
       -- I feel like leftEdge and rightEdge should be handled by the children
       -- but deleting them does not work..
-      let leftEdge = insEdge (nodenr, nodenr + 1, 0.5) newGraph
+      let leftEdge = insEdge (nodenr, nodenr + 1, 0.5) rightGraph
       let rightEdge = insEdge (nodenr, leftmax + 1, 0.5) leftEdge
       let parentEdge = insEdge (parentnr, nodenr, 1.0) rightEdge
       (parentEdge, rightmax)
     EPar e1 e2 -> do
-      let (leftGraph, leftmax) = expToGraph' e1 graph (nodenr + 1) nodenr loopback
+      let newGraph = insNode (nodenr, (Par, 0)) graph
+      let (leftGraph, leftmax) = expToGraph' e1 newGraph (nodenr + 1) nodenr loopback
       let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) nodenr loopback
-      let newGraph = insNode (nodenr, (Par, 0)) rightGraph
       -- I feel like leftEdge and rightEdge should be handled by the children
       -- but deleting them does not work..
-      let leftEdge = insEdge (nodenr, nodenr + 1, 1.0) newGraph
+      let leftEdge = insEdge (nodenr, nodenr + 1, 1.0) rightGraph
       let rightEdge = insEdge (nodenr, leftmax + 1, 1.0) leftEdge
       let parentEdge = insEdge (parentnr, nodenr, 1.0) rightEdge
       (parentEdge, rightmax)
@@ -633,4 +639,3 @@ createAutomaton content = do
       -- putStrLn "}"
       -- putStrLn "writing to file..."
       -- writeCppFile prgrm
-
