@@ -10,8 +10,7 @@ import Syntax.Par
 import Syntax.Abs
 import Syntax.Print
 import Inference (inferenceExact, inferenceSample)
-import Automaton (createAutomatonIO)
-import Normalise
+import Normalise (testGfold, compileToNormalForm, testNormalization)
 
 import Control.Monad.State
 
@@ -67,11 +66,11 @@ main = do
   args <- getArgs
   case args of
     ["--help"] -> usage
-    "-g":_ -> testGfold
+    "-g":fs ->  parseAndForward fs testNormalization
     "-p":fs    -> mapM_ (runFile 0 pExp) fs
     "-i":fs  -> parseAndForwardArg fs inferenceExact
     "-s":fs  -> parseAndForwardArg fs inferenceSample
-    "-c":fs    -> parseAndForward fs createAutomatonIO
+    "-c":fs    -> parseAndForward fs compileToNormalForm
     "-t":fs    -> mapM_ (runFile 2 pExp) fs
     fs         -> mapM_ (runFile 2 pExp) fs
 

@@ -1,8 +1,8 @@
-module Normalise (normalise, testGfold) where
+module Normalise (compileToNormalForm, normalise, testGfold, testNormalization) where
 
 import Syntax.Abs
 
-import Automaton (expToGraph, Inst ( AssSw , AssPt , Par , Prob ), InstNode, PnkGraph)
+import Automaton (compileGraph, expToGraph, Inst ( AssSw , AssPt , Par , Prob ), InstNode, PnkGraph)
 
 import qualified Data.IntMap.Strict as Map
 import Data.IntMap.Strict (IntMap)
@@ -13,8 +13,8 @@ import Data.Tuple.Extra (thd3)
 
 
 import Data.Graph.Inductive.Graph 
--- import Data.Graph.Inductive.PatriciaTree (Gr)
-import Data.Graph.Inductive.Tree (Gr)
+import Data.Graph.Inductive.PatriciaTree (Gr)
+-- import Data.Graph.Inductive.Tree (Gr)
 import Data.Graph.Inductive.Query.DFS
 
 import Data.Graph.Inductive.Dot (fglToDot, showDot)
@@ -277,13 +277,5 @@ writeGraphToFile name graph = do
   let dot = showDot $ fglToDot graph
   writeFile name dot
 
--- type of Graph is Gr a b with a the type for the nodes and b the type for the edges
-testGraph :: Exp -> IO ()
-testGraph expression = do
-  putStr "testGraph\n"
-  -- let graph = expToGraph expression
-  testNormalization expression
-  -- prettyPrint graph
-  -- writeGraphToFile "automaton.dot" graph
-  -- getGraphNodes graph
-  -- putStr $ graphToInstructionList graph
+compileToNormalForm :: Exp -> IO ()
+compileToNormalForm expression = compileGraph $ normalise $ expToGraph expression
