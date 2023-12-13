@@ -10,7 +10,7 @@ import Syntax.Par
 import Syntax.Abs
 import Syntax.Print
 import Inference (inferenceExact, inferenceSample)
-import Normalise (testGfold, compileToNormalForm, testNormalization)
+import Normalise (testGfold, compileToNormalForm, testNormalization, testNorm)
 
 import Control.Monad.State
 
@@ -59,6 +59,7 @@ usage = do
     , "  -c (file)            Compile program to NS-3 C++"
     , "  -p (file)            Attempt to parse program"
     , "  -t (file)            Attempt to parse program and show the resulting tree"
+    , "  -d (file)            Generate automata and output to dot file (normalised and regular)"
     ]
 
 main :: IO ()
@@ -66,12 +67,13 @@ main = do
   args <- getArgs
   case args of
     ["--help"] -> usage
-    "-g":fs ->  parseAndForward fs testNormalization
+    "-g":fs    -> parseAndForward fs testNormalization
     "-p":fs    -> mapM_ (runFile 0 pExp) fs
-    "-i":fs  -> parseAndForwardArg fs inferenceExact
-    "-s":fs  -> parseAndForwardArg fs inferenceSample
+    "-i":fs    -> parseAndForwardArg fs inferenceExact
+    "-s":fs    -> parseAndForwardArg fs inferenceSample
     "-c":fs    -> parseAndForward fs compileToNormalForm
     "-t":fs    -> mapM_ (runFile 2 pExp) fs
+    "-d":fs    ->parseAndForward fs testNorm
     fs         -> mapM_ (runFile 2 pExp) fs
 
 parseAndForwardArg :: [String] -> (Exp -> String -> IO()) -> IO ()

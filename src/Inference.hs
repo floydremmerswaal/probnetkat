@@ -27,7 +27,7 @@ prettyPrintSHD ((sh, d):xs) = do
   prettyPrintSingleSHD (sh, d)
   prettyPrintSHD xs
 
--- prettyPrintSHI normalizes the probabilities and calls prettyPrintSHD
+-- prettyPrintSHI normalises the probabilities and calls prettyPrintSHD
 prettyPrintSHI :: Int -> [(SH, Int)] -> IO ()
 prettyPrintSHI _ [] = return ()
 prettyPrintSHI total ((sh, i):xs) = do

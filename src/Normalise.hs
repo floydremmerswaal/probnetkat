@@ -1,4 +1,4 @@
-module Normalise (compileToNormalForm, normalise, testGfold, testNormalization) where
+module Normalise (testNorm, compileToNormalForm, normalise, testGfold, testNormalization) where
 
 import Syntax.Abs
 
@@ -20,8 +20,6 @@ import Data.Graph.Inductive.Query.DFS
 import Data.Graph.Inductive.Dot (fglToDot, showDot)
 
 import Control.Monad.State
-
-import Debug.Trace
 
 type PnkContext = Context InstNode Double
 
@@ -148,8 +146,7 @@ subForest' t = zip (snd $ rootLabel t) $ subForest t
 -- r is usually 0, the root of the automaton.
 automToTree :: Node -> PnkGraph -> SpTree
 automToTree r =
-  head . xdffWith suc' (\c@(inAdj, n, l, outAdj) ->
-                          trace ("Adding context " ++ show c ++ " to tree.")
+  head . xdffWith suc' (\(inAdj, n, l, outAdj) ->
                           ((inAdj, n, l), fmap fst outAdj)) [r]
 
 -- | Merges a non-deterministic choice down into the given forest.
@@ -279,3 +276,13 @@ writeGraphToFile name graph = do
 
 compileToNormalForm :: Exp -> IO ()
 compileToNormalForm expression = compileGraph $ normalise $ expToGraph expression
+
+testNorm :: Exp -> IO ()
+testNorm expression = do
+  putStrLn "Generating automata"
+  let graph = expToGraph expression
+  let norm = normalise graph
+  putStrLn "Non-normalised automaton written to autom.dot"
+  writeGraphToFile "autom.dot" graph
+  putStrLn "Normalised automaton written to autom_norm.dot"
+  writeGraphToFile "autom_norm.dot" norm
