@@ -75,7 +75,6 @@ main = do
     "-t":fs    -> mapM_ (runFile 2 pExp) fs
     fs         -> mapM_ (runFile 2 pExp) fs
 
-
 parseAndForwardArg :: [String] -> (Exp -> String -> IO()) -> IO ()
 parseAndForwardArg fs f = do
   s <- readFile (head fs)

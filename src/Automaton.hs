@@ -7,31 +7,12 @@ import Data.Graph.Inductive.Tree (Gr)
 
 import Prelude hiding (exp)
 
-import Control.Monad (when)
-import Syntax.Par
 import Syntax.Abs
-import Syntax.Print
-
-import System.Exit ( exitFailure )
-
-type Verbosity = Int
 
 data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip deriving Show
 type InstNode = (Inst, Double)
 
 type PnkGraph = Gr InstNode Double
-
--- we want to create a function that takes a program and outputs c++ code
--- the program should be turned into a finite automaton
-
-
-putStrV :: Verbosity -> String -> IO ()
-putStrV v s = when (v > 1) $ putStrLn s
-
-showTree :: (Show a, Print a) => Int -> a -> IO ()
-showTree v tree = do
-  putStrV v $ "\n[Abstract Syntax]\n\n" ++ show tree
-  putStrV v $ "\n[Linearized tree]\n\n" ++ printTree tree
 
 expToGraph' :: Exp -> PnkGraph -> Int -> Int -> Int -> (PnkGraph, Int)
 expToGraph' expression graph nodenr parentnr loopback =
