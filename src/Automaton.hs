@@ -4,10 +4,6 @@ import Data.Graph.Inductive.Graph -- (Context, Node, prettyPrint, insNode, insEd
 
 import Data.Graph.Inductive.PatriciaTree (Gr)
 -- import Data.Graph.Inductive.Tree (Gr)
-
-import Debug.Trace
-
-import Prelude hiding (exp)
 import Syntax.Abs
 
 data Inst = AssSw | AssPt | TestSw | TestPt | Dup | Par | Prob | Drop | Skip deriving Show
@@ -119,9 +115,9 @@ createAutomaton :: Exp -> PnkGraph
 createAutomaton = expToGraph
 
 createAutomatonIO :: Exp -> IO ()
-createAutomatonIO exp = do
+createAutomatonIO expr = do
   putStrLn "Creating automaton..."
-  compileGraph $ createAutomaton exp
+  compileGraph $ createAutomaton expr
 
 compileGraph :: PnkGraph -> IO ()
 compileGraph graph = do

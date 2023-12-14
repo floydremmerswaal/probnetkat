@@ -3,8 +3,6 @@ module Inference (inferenceExact, inferenceSample) where
 import Semantics
 import Syntax.Abs
 
-import Prelude hiding (exp)
-
 import qualified Data.Set as Set
 import qualified Data.MultiSet as Mset
 import Control.Arrow ( Kleisli(runKleisli) )
@@ -41,10 +39,10 @@ printAsMultiSet input = do
 
 
 inferenceExact :: Exp -> String ->  IO ()
-inferenceExact exp uinput = do
+inferenceExact expr uinput = do
   putStrLn "\nRunning inference."
   let initialSet = Set.fromList input :: SH
-  let kleisliArrow = transExp exp ::  Kleisli Enumerator SH SH
+  let kleisliArrow = transExp expr ::  Kleisli Enumerator SH SH
   let result = runKleisli kleisliArrow initialSet
   let samples = enumerator result
   putStrLn "Function input:"
@@ -54,10 +52,10 @@ inferenceExact exp uinput = do
   where input = Data.Maybe.fromMaybe [[(0, 0)]] (readMaybe uinput) -- if no input is given, use [[(0, 0)]]
 
 inferenceSample :: Exp -> String ->  IO ()
-inferenceSample exp uinput = do
+inferenceSample expr uinput = do
   putStrLn "\nRunning inference."
   let initialSet = Set.fromList input :: SH
-  let kleisliArrow = transExp exp ::  Kleisli SamplerIO SH SH
+  let kleisliArrow = transExp expr ::  Kleisli SamplerIO SH SH
   let result = runKleisli kleisliArrow initialSet
   samples <- sampleIOfixed $ replicateM 10000 result
   putStrLn "Function input:"
