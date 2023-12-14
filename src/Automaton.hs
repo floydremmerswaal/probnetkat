@@ -68,7 +68,7 @@ expToGraph' expression graph nodenr parentnr loopback =
         else
           (addedEdge, nodenr)
     ESeq e1 e2 -> do
-      let (leftGraph, leftmax ) = expToGraph' e1 graph nodenr parentnr loopback
+      let (leftGraph, leftmax ) = expToGraph' e1 graph nodenr parentnr (-1)
       let (rightGraph, rightmax) = expToGraph' e2 leftGraph (leftmax + 1) leftmax loopback
       -- let connection = insEdge (leftmax, leftmax + 1, ()) rightGraph
       (rightGraph, rightmax)
