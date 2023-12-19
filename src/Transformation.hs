@@ -7,31 +7,36 @@
 module Transformation (transExp) where
 
 import Prelude hiding (drop, seq)
-import qualified Syntax.Abs
+import Syntax.Abs
 
 import Control.Monad.Bayes.Class
 
 import Control.Arrow
-import Semantics 
+import Semantics
+    ( kleene,
+      par,
+      prob,
+      seq,
+      drop,
+      skip,
+      dup,
+      testPt,
+      testSw,
+      assignPt,
+      assignSw,
+      SH ) 
 
--- type Err = Either String
--- type Result m = Err (Kleisli m SH SH)
--- transIdent :: Syntax.Abs.Ident -> Result m
--- transIdent x = case x of
---   Syntax.Abs.Ident string -> failure x
-
-
-transExp :: MonadDistribution m => Syntax.Abs.Exp -> Kleisli m SH SH
+transExp :: MonadDistribution m => Exp -> Kleisli m SH SH
 transExp x = case x of
-  Syntax.Abs.EAssSw integer -> assignSw integer
-  Syntax.Abs.EAssPt integer -> assignPt integer
-  Syntax.Abs.ESwEq integer -> testSw integer
-  Syntax.Abs.EPtEq integer -> testPt integer
-  Syntax.Abs.EDup -> dup
-  Syntax.Abs.ESkip -> skip
-  Syntax.Abs.EDrop -> drop
-  Syntax.Abs.ESeq exp1 exp2 -> seq (transExp exp1) (transExp exp2)
-  Syntax.Abs.EProbD exp1 exp2 -> prob 0.5 (transExp exp1) (transExp exp2)
-  Syntax.Abs.EProb exp1 double exp2 -> prob double (transExp exp1)  (transExp exp2)
-  Syntax.Abs.EPar exp1 exp2 -> par (transExp exp1) (transExp exp2)
-  Syntax.Abs.EKleene exp1 -> kleene (transExp exp1)
+  EDup                      -> dup
+  ESkip                     -> skip
+  EDrop                     -> drop
+  EAssSw  integer           -> assignSw integer
+  EAssPt  integer           -> assignPt integer
+  ESwEq   integer           -> testSw integer
+  EPtEq   integer           -> testPt integer
+  EKleene exp1              -> kleene (transExp exp1)
+  ESeq    exp1 exp2         -> seq (transExp exp1) (transExp exp2)
+  EPar    exp1 exp2         -> par (transExp exp1) (transExp exp2)
+  EProbD  exp1 exp2         -> prob 0.5 (transExp exp1) (transExp exp2)
+  EProb   exp1 double exp2  -> prob double (transExp exp1)  (transExp exp2)
