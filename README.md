@@ -16,11 +16,13 @@ Alternatively, to both build and run the program, run:
 
 Where the options are as follows:
 
-    --help              Display the help message.
-    -i (file) (input)   Run inference on program
-    -c (file)           Compile program to NS-3 C++
-    -p (file)           Attempt to parse program"
-    -t (file)           Attempt to parse program and show the resulting tree"
+    --help               Display the help message.
+    -i (file) (input)    Run exact inference on program
+    -s (file) (input)    Run sample inference on program
+    -c (file)            Compile program to NS-3 C++
+    -p (file)            Attempt to parse program
+    -t (file)            Attempt to parse program and show the resulting tree
+    -d (file)            Generate automata and output to dot file (normalised and regular)
 
 For inference, you can supply an input set of histories as follow:
 
