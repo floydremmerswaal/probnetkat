@@ -117,11 +117,7 @@ namespace ns3
 
     std::map<uint32_t, std::map<uint32_t, bool>> nodenrToBranchMap;
 
-    bool getBranch(uint32_t nodeNr, uint32_t branchNr);
-    void setBranch(uint32_t nodeNr, uint32_t branchNr, bool value);
     void onDrop(Ptr<const Packet> packet);
-
-    Ptr<std::map<std : pair<int, int>, bool>> m_branchMap; // the map contains maps the branch number and node number to bool for PAR
 
     /// Callbacks for tracing the packet Rx events
     TracedCallback<Ptr<const Packet>> m_rxTrace;

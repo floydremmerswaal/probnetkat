@@ -122,42 +122,7 @@ namespace ns3
         return tid;
     }
 
-    PnkServer::getBranch(uint32_t nodeNr, uint32_t branchNr)
-    {
-        if (m_branchMap
-                ->contains(nodeNr, branchNr))
-        {
-            return m_branchMap[nodeNr][branchNr];
-        }
-        else
-        {
-            return false;
-        }
-    }
-
-    PnkServer::setBranch(uint32_t nodeNr, uint32_t branchNr, bool value)
-    {
-        m_branchMap->insert(std::pair<std::pair<int, int>, bool>(std::pair<int, int>(nodeNr, branchNr), value));
-    }
-
-    PnkServer::onDrop(Ptr<const Packet> packet)
-    {
-        std::cout << "Dropped packet" << std::endl;
-        // if a branch was taken in a PAR, we need to signal that the branch is no longer to be taken
-
-        // get packet header
-        PnkHeader pnkhead;
-        packet->RemoveHeader(pnkhead);
-        if pnkhead
-            .GetBranchCount() > 0
-            {
-                // get the branch number
-                uint32_t nodenr = pnkhead.PopBranch();
-                setBranch(nodenr, pnkhead.GetCur(), false);
-            }
-    }
-
-    PnkServer::PnkServer() should
+    PnkServer::PnkServer()
         : m_lossCounter(0)
     {
         NS_LOG_FUNCTION(this);
@@ -223,14 +188,15 @@ namespace ns3
             {
                 NS_FATAL_ERROR("Failed to bind socket");
             }
-        } else {
+        }
+        else
+        {
             // parallel node
             // for now, just pick the first one
 
             // TODO reference a map of the parent program that tells us which
             // par branches lead to drops, and skip those if possible (if all branches are marked
             // we will pick one of them anyway)
-
         }
 
         m_socket->SetRecvCallback(MakeCallback(&PnkServer::HandleRead, this));

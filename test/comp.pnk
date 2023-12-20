@@ -1,0 +1,1 @@
+((sw <- 0; dup ; sw <- 1 ; dup ; sw <- 2; dup ) + (sw <- 2 ; dup ; sw <- 1; dup ; sw <- 0; dup))*

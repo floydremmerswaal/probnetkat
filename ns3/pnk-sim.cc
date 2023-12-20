@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
     const int n_nodes = 3;
 
     std::string animFile = "pnk-animation.xml"; // Name of file for animation output
-    const int initial_packet_destinations[] = {0, 1, 0};
+    const int initial_packet_destinations[] = {0, 0, 0};
     const int intital_packet_number = 3;
     const bool use_time_list = true; // use the list of times to send the packets
                                      // or set the time between packets
