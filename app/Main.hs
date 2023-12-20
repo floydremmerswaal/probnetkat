@@ -10,7 +10,8 @@ import Syntax.Par
 import Syntax.Abs
 import Syntax.Print
 import Inference (inferenceExact, inferenceSample)
-import Normalise (testGfold, compileToNormalForm, testNormalization, testNorm)
+import Normalise (compileToNormalForm, testNormalization, testNorm)
+import Automaton (createAutomatonIO)
 
 import Control.Monad.State
 
@@ -53,13 +54,13 @@ usage = do
   putStrLn $ unlines
     [ "Call with one of the following argument combinations:"
     , "  --help               Display this help message."
-    , "  -g                   Test gfold"
     , "  -i (file) (input)    Run exact inference on program"
     , "  -s (file) (input)    Run sample inference on program"
     , "  -c (file)            Compile program to NS-3 C++"
     , "  -p (file)            Attempt to parse program"
     , "  -t (file)            Attempt to parse program and show the resulting tree"
     , "  -d (file)            Generate automata and output to dot file (normalised and regular)"
+    , "  -g                   Test normalization (outputting dot files)"
     ]
 
 main :: IO ()
@@ -71,6 +72,7 @@ main = do
     "-p":fs    -> mapM_ (runFile 0 pExp) fs
     "-i":fs    -> parseAndForwardArg fs inferenceExact
     "-s":fs    -> parseAndForwardArg fs inferenceSample
+    "-c":fs    -> parseAndForward fs createAutomatonIO
     "-c":fs    -> parseAndForward fs compileToNormalForm
     "-t":fs    -> mapM_ (runFile 2 pExp) fs
     "-d":fs    ->parseAndForward fs testNorm
@@ -87,7 +89,7 @@ parseAndForwardArg fs f = do
       exitFailure
     Right tree -> do
       putStrLn "\nParse successful!"
-      showTree 2 tree
+      -- showTree 2 tree
       f tree (head (tail fs))
   
 parseAndForward :: [String] -> (Exp -> IO()) -> IO ()
@@ -101,5 +103,5 @@ parseAndForward fs f = do
       exitFailure
     Right tree -> do
       putStrLn "\nParse successful!"
-      showTree 2 tree
+      -- showTree 2 tree
       f tree

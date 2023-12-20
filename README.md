@@ -23,6 +23,7 @@ Where the options are as follows:
     -p (file)            Attempt to parse program
     -t (file)            Attempt to parse program and show the resulting tree
     -d (file)            Generate automata and output to dot file (normalised and regular)
+    -g (file)            Test normalization (outputting dot files)
 
 For inference, you can supply an input set of histories as follow:
 

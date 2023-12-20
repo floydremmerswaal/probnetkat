@@ -128,15 +128,15 @@ instrToSTring :: LNode InstNode -> String
 instrToSTring instrnode = do
   let (_, node) = instrnode
   case node of
-    (AssSw, arg) -> "\tret.addNode(SW, " ++ show arg ++ ", 0.0);"
-    (AssPt, arg) -> "\tret.addNode(PT, " ++ show arg ++ ", 0.0);"
-    (TestSw, arg) -> "\tret.addNode(TESTSW, " ++ show arg ++ ", 0.0);"
-    (TestPt, arg) -> "\tret.addNode(TESTPT, " ++ show arg ++ ", 0.0);"
-    (Dup, _) -> "\tret.addNode(DUP, 0, 0.0);"
-    (Par, _) -> "\tret.addNode(PAR, 0, 0.0);"
-    (Prob, arg) -> "\tret.addNode(PROB, 0, " ++ show arg ++ ");"
-    (Drop, _) -> "\tret.addNode(DROP, 0, 0.0);"
-    (Skip, _) -> "\tret.addNode(SKIP, 0, 0.0);"
+    (AssSw, arg) -> "\tret.addNode(SW, " ++ show arg ++ ");"
+    (AssPt, arg) -> "\tret.addNode(PT, " ++ show arg ++ ");"
+    (TestSw, arg) -> "\tret.addNode(TESTSW, " ++ show arg ++ ");"
+    (TestPt, arg) -> "\tret.addNode(TESTPT, " ++ show arg ++ ");"
+    (Dup, _) -> "\tret.addNode(DUP, 0);"
+    (Par, _) -> "\tret.addNode(PAR, 0);"
+    (Prob, _) -> "\tret.addNode(PROB, 0);"
+    (Drop, _) -> "\tret.addNode(DROP, 0);"
+    (Skip, _) -> "\tret.addNode(SKIP, 0);"
 
 edgesToString :: LEdge Double -> String
 edgesToString edge = do
